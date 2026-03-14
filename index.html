@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>自定义题库原型</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <h1 id="page-title">首页</h1>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="content-area">
+            <!-- Home Tab Content -->
+            <section id="home-tab" class="tab-content active">
+                <!-- Learning Status Card -->
+                <div class="card status-card">
+                    <h3>今日学习概览</h3>
+                    <div class="stats-row">
+                        <div class="stat-item">
+                            <span class="stat-value">85%</span>
+                            <span class="stat-label">学习率</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">60%</span>
+                            <span class="stat-label">复习率</span>
+                        </div>
+                    </div>
+                    <div class="stats-row" style="margin-top: 15px; border-top: 1px solid #f0f0f0; padding-top: 15px;">
+                         <div class="stat-item">
+                            <span class="stat-value" style="font-size: 20px; color: #722ed1;">+12</span>
+                            <span class="stat-label">新增知识/题目</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" style="font-size: 20px; color: #fa8c16;">45</span>
+                            <span class="stat-label">待学量</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quiz Module -->
+                <div class="section-title">做题模块</div>
+                <div class="grid-menu">
+                    <div class="menu-item" onclick="startRandomQuiz()">
+                        <div class="icon-box bg-blue"><i class="fas fa-random"></i></div>
+                        <span>随机模式</span>
+                    </div>
+                    <div class="menu-item" onclick="openKnowledgeTree()">
+                        <div class="icon-box bg-green"><i class="fas fa-project-diagram"></i></div>
+                        <span>知识树模式</span>
+                    </div>
+                </div>
+
+                <!-- Review Module -->
+                <div class="section-title">复习模块</div>
+                <div class="card review-card" onclick="startReview()">
+                    <div class="review-info">
+                        <div class="icon-box bg-orange"><i class="fas fa-history"></i></div>
+                        <div>
+                            <h4>待复习题目</h4>
+                            <p>今日需复习: <span class="highlight">15</span> 题</p>
+                        </div>
+                    </div>
+                    <button class="btn-action">开始复习</button>
+                </div>
+
+                <!-- Add Knowledge Module -->
+                <div class="section-title">新增知识体系</div>
+                <div class="grid-menu">
+                    <div class="menu-item" onclick="addKnowledgeTree()">
+                        <div class="icon-box bg-purple"><i class="fas fa-folder-plus"></i></div>
+                        <span>新增知识树</span>
+                    </div>
+                    <div class="menu-item" onclick="addQuestion()">
+                        <div class="icon-box bg-red"><i class="fas fa-plus-circle"></i></div>
+                        <span>新增题目</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- My Center Tab Content -->
+            <section id="center-tab" class="tab-content">
+                <!-- User Profile Summary -->
+                <div class="user-profile">
+                    <div class="avatar"><i class="fas fa-user"></i></div>
+                    <div class="user-info">
+                        <h3>用户名称</h3>
+                        <p>坚持学习第 12 天</p>
+                    </div>
+                </div>
+
+                <!-- Wrong Question Book -->
+                <div class="card action-card" onclick="openWrongBook()">
+                    <div class="card-icon bg-red"><i class="fas fa-book-open"></i></div>
+                    <div class="card-text">
+                        <h4>错题本</h4>
+                        <p>累计错题 24 道</p>
+                    </div>
+                    <i class="fas fa-chevron-right arrow"></i>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="chart-container">
+                    <h4>做题复习曲线</h4>
+                    <canvas id="quizCurveChart"></canvas>
+                </div>
+
+                <div class="chart-container">
+                    <h4>新增知识点趋势</h4>
+                    <canvas id="newKnowledgeChart"></canvas>
+                </div>
+
+                <!-- Unmastered Knowledge -->
+                <div class="section-title">未掌握知识 (错题率高)</div>
+                <div class="knowledge-list">
+                    <div class="knowledge-item">
+                        <span class="k-name">Vue3 响应式原理</span>
+                        <div class="progress-bar">
+                            <div class="progress" style="width: 30%; background-color: #ff4d4f;"></div>
+                        </div>
+                        <span class="k-rate">掌握率 30%</span>
+                    </div>
+                    <div class="knowledge-item">
+                        <span class="k-name">JS 原型链</span>
+                        <div class="progress-bar">
+                            <div class="progress" style="width: 45%; background-color: #ffca28;"></div>
+                        </div>
+                        <span class="k-rate">掌握率 45%</span>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Bottom Tab Bar -->
+        <nav class="tab-bar">
+            <div class="tab-item active" onclick="switchTab('home')">
+                <i class="fas fa-home"></i>
+                <span>首页</span>
+            </div>
+            <div class="tab-item" onclick="switchTab('center')">
+                <i class="fas fa-user"></i>
+                <span>我的中心</span>
+            </div>
+        </nav>
+
+        <!-- Modal for Knowledge Tree (Hidden by default) -->
+        <div id="tree-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>选择知识点</h3>
+                    <span class="close-modal" onclick="closeModal('tree-modal')">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="tree-level" id="tree-root">
+                        <!-- Dynamic Tree Content -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. New Full Page Views (Initially Hidden) -->
+
+    <!-- Quiz View -->
+    <div id="quiz-view" class="full-page-view">
+        <header class="app-header">
+            <i class="fas fa-arrow-left header-icon" onclick="closeView('quiz-view')"></i>
+            <h1 id="quiz-title">做题中</h1>
+            <span class="header-action">1/10</span>
+        </header>
+        <div class="content-area">
+            <div class="card question-card">
+                <span class="tag-type">单选题</span>
+                <p class="question-text">在 Vue 3 中，使用哪个函数来定义响应式对象？</p>
+            </div>
+            <div class="options-list">
+                <div class="option-item" onclick="selectOption(this)">A. ref()</div>
+                <div class="option-item" onclick="selectOption(this)">B. reactive()</div>
+                <div class="option-item" onclick="selectOption(this)">C. computed()</div>
+                <div class="option-item" onclick="selectOption(this)">D. watch()</div>
+            </div>
+            <div class="quiz-actions">
+                <button class="btn-primary" onclick="submitAnswer()">提交答案</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tree Management View -->
+    <div id="tree-manage-view" class="full-page-view">
+        <header class="app-header">
+            <i class="fas fa-arrow-left header-icon" onclick="closeView('tree-manage-view')"></i>
+            <h1>知识树管理</h1>
+            <span class="header-action" onclick="exportTreeJSON()"><i class="fas fa-download"></i></span>
+        </header>
+        <div class="content-area">
+            <div class="toolbar">
+                <button class="btn-small btn-outline" onclick="importTreeJSON()"><i class="fas fa-file-import"></i> 导入 JSON</button>
+                <button class="btn-small btn-outline" onclick="addRootNode()"><i class="fas fa-plus"></i> 新增根节点</button>
+            </div>
+            <div class="tree-container" id="manage-tree-root">
+                <!-- Tree content will be rendered here with edit controls -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Question View -->
+    <div id="add-question-view" class="full-page-view">
+        <header class="app-header">
+            <i class="fas fa-arrow-left header-icon" onclick="closeView('add-question-view')"></i>
+            <h1>新增题目</h1>
+        </header>
+        <div class="content-area">
+            <div class="form-group">
+                <label>所属知识点</label>
+                <div class="input-selector" onclick="openKnowledgeTree('select-for-question')">
+                    <span id="selected-node-name">请选择知识点...</span>
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>题目类型</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="q-type" checked> 单选</label>
+                    <label><input type="radio" name="q-type"> 多选</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>题目内容</label>
+                <textarea rows="3" placeholder="请输入题目描述"></textarea>
+            </div>
+            <div class="form-group">
+                <label>选项 (点击标记正确答案)</label>
+                <div class="option-input-group">
+                    <input type="radio" name="correct-opt" title="设为正确答案">
+                    <input type="text" placeholder="选项 A">
+                </div>
+                <div class="option-input-group">
+                    <input type="radio" name="correct-opt" title="设为正确答案">
+                    <input type="text" placeholder="选项 B">
+                </div>
+                 <button class="btn-small btn-dashed" style="width:100%">+ 添加选项</button>
+            </div>
+            <div class="footer-action">
+                <button class="btn-primary full-width" onclick="saveQuestion()">保存题目</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
