@@ -93,14 +93,42 @@ const defaultTreeData = [
 ];
 
 const defaultNotes = [
-    { id: 1, title: "Vue3 响应式原理笔记", date: "2023-10-24", count: 5, tag: "Vue.js" },
-    { id: 2, title: "JS 原型链复习", date: "2023-10-22", count: 12, tag: "JavaScript" },
-    { id: 3, title: "HTTP 协议状态码", date: "2023-10-20", count: 8, tag: "网络" }
+    { 
+        id: 1, 
+        title: "Vue3 响应式原理笔记", 
+        date: "2023-10-24", 
+        count: 2, 
+        tag: "Vue.js",
+        content: "Vue3 使用 Proxy 来实现响应式...\n\n相比 Object.defineProperty，Proxy 可以...",
+        questions: [
+            { id: 101, title: "Vue3 的响应式基础 API 是什么？", type: "单选题", options: ["A. ref", "B. reactive", "C. computed"] },
+            { id: 102, title: "Proxy 可以拦截哪些操作？", type: "多选题", options: ["A. 属性读取", "B. 属性设置", "C. 属性删除"] }
+        ]
+    },
+    { 
+        id: 2, 
+        title: "JS 原型链复习", 
+        date: "2023-10-22", 
+        count: 0, 
+        tag: "JavaScript",
+        content: "原型链是 JS 继承的基础...",
+        questions: []
+    },
+    { 
+        id: 3, 
+        title: "HTTP 协议状态码", 
+        date: "2023-10-20", 
+        count: 0, 
+        tag: "网络",
+        content: "200 OK\n404 Not Found\n500 Internal Server Error",
+        questions: []
+    }
 ];
 
 // Load Data
 let knowledgeTreeData = DataStore.get('knowledgeTree', defaultTreeData);
 let mockNotes = DataStore.get('notes', defaultNotes);
+let currentEditingNoteId = null; // Track currently edited note
 
 // Initialize based on current page
 document.addEventListener('DOMContentLoaded', () => {
@@ -113,6 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Auto-init Note list if on Note page
     if (path.includes('note.html') || document.getElementById('note-list-container')) {
+        renderNoteTree(knowledgeTreeData, document.getElementById('note-tree-container'));
         renderNoteList();
     }
 
@@ -127,19 +156,39 @@ document.addEventListener('DOMContentLoaded', () => {
 function openModal(modalId) {
     const modal = document.getElementById(modalId);
     if (!modal) return;
+    
+    // For Tailwind, we remove 'hidden' and ensure it's 'flex'
     modal.classList.remove('hidden');
     modal.classList.add('flex');
-    setTimeout(() => {
-        // Assume modal content has a transform class for animation or just rely on flex
-        // For tailwind modal, we usually just toggle hidden/flex
-    }, 10);
+    
+    // Animate the inner content
+    // We assume the inner content is the first child (the white card)
+    const content = modal.firstElementChild;
+    if (content) {
+        // Reset transform to trigger slide up if using transform classes
+        // In Tailwind config above, we used 'animate-slide-up' class which runs on mount
+        // But if we re-open, we might need to re-trigger it. 
+        // Simplest way for prototype: ensure translate-y is handled
+        content.classList.remove('translate-y-full');
+        content.classList.add('translate-y-0');
+    }
 }
 
 function closeModal(modalId) {
     const modal = document.getElementById(modalId);
     if (!modal) return;
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
+    
+    const content = modal.firstElementChild;
+    if (content) {
+        content.classList.remove('translate-y-0');
+        content.classList.add('translate-y-full');
+    }
+    
+    // Wait for animation
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }, 300);
 }
 
 // Navigation Logic
@@ -148,13 +197,277 @@ function navigateTo(page) {
 }
 
 // --- Note Logic ---
+function toggleNoteView(mode) {
+    const treeContainer = document.getElementById('note-tree-container');
+    const listContainer = document.getElementById('note-list-container');
+    const toggleTree = document.getElementById('view-toggle-tree');
+    const toggleList = document.getElementById('view-toggle-list');
+
+    if (mode === 'tree') {
+        treeContainer.classList.remove('hidden');
+        listContainer.classList.add('hidden');
+        
+        toggleTree.classList.add('text-primary', 'bg-white', 'shadow-sm');
+        toggleTree.classList.remove('text-gray-400', 'hover:text-primary');
+        
+        toggleList.classList.remove('text-primary', 'bg-white', 'shadow-sm');
+        toggleList.classList.add('text-gray-400', 'hover:text-primary');
+    } else {
+        treeContainer.classList.add('hidden');
+        listContainer.classList.remove('hidden');
+        
+        toggleList.classList.add('text-primary', 'bg-white', 'shadow-sm');
+        toggleList.classList.remove('text-gray-400', 'hover:text-primary');
+        
+        toggleTree.classList.remove('text-primary', 'bg-white', 'shadow-sm');
+        toggleTree.classList.add('text-gray-400', 'hover:text-primary');
+    }
+}
+
+function renderNoteTree(data, container) {
+    if (!data || !container) return;
+    container.innerHTML = '';
+    
+    data.forEach(node => {
+        const nodeEl = document.createElement('div');
+        nodeEl.className = 'ml-3 py-1';
+        
+        // Find notes for this node
+        const nodeNotes = mockNotes.filter(n => n.tag === node.title); // Using tag match for prototype
+        const hasNotes = nodeNotes.length > 0;
+        const hasChildren = node.children && node.children.length > 0;
+        
+        // Determine icon
+        let iconClass = 'fas fa-circle';
+        let iconStyle = 'font-size: 6px;';
+        let iconColor = 'text-gray-300';
+        
+        if (hasChildren || hasNotes) {
+            iconClass = 'fas fa-caret-right';
+            iconStyle = '';
+            iconColor = 'text-gray-400';
+        }
+
+        const toggleIcon = `<i class="${iconClass} ${iconColor} mr-2 w-4 text-center transition-transform duration-200 node-icon" style="${iconStyle}"></i>`;
+        
+        nodeEl.innerHTML = `
+            <div class="flex items-center p-2 rounded cursor-pointer hover:bg-gray-50 transition node-content" onclick="toggleNode(this)">
+                ${toggleIcon}
+                <span class="text-sm text-gray-700 font-medium">${node.title}</span>
+                ${hasNotes ? `<span class="ml-2 text-xs text-primary bg-blue-50 px-1.5 rounded">${nodeNotes.length}</span>` : ''}
+            </div>
+            <div class="pl-4 border-l border-gray-100 hidden children-container">
+                <!-- Notes attached directly to this node -->
+                ${nodeNotes.map(note => `
+                    <div class="flex items-center justify-between p-2 mb-1 bg-yellow-50 rounded-lg cursor-pointer hover:bg-yellow-100 transition ml-3 border border-yellow-100" onclick="event.stopPropagation(); openNoteQuestions(${note.id})">
+                        <div class="flex items-center overflow-hidden">
+                            <i class="fas fa-file-alt text-yellow-500 mr-2 text-xs"></i>
+                            <span class="text-sm text-gray-700 truncate">${note.title}</span>
+                        </div>
+                        <i class="fas fa-chevron-right text-xs text-gray-300"></i>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        
+        container.appendChild(nodeEl);
+        
+        // Render children nodes recursively
+        if (hasChildren) {
+            const childrenContainer = nodeEl.querySelector('.children-container');
+            renderNoteTree(node.children, childrenContainer);
+        }
+    });
+}
+
+function openNoteQuestions(noteId) {
+    const note = mockNotes.find(n => n.id === noteId);
+    if (!note) return;
+    
+    document.getElementById('note-questions-view').classList.remove('translate-x-full');
+    const container = document.getElementById('note-questions-list');
+    
+    // Mock Questions for Note
+    const questions = [
+        { id: 101, title: "Vue3 的响应式基础 API 是什么？", type: "单选题" },
+        { id: 102, title: "ref 和 reactive 的区别？", type: "简答题" }
+    ];
+    
+    container.innerHTML = `
+        <div class="mb-4">
+            <h2 class="text-base font-bold text-gray-800">${note.title}</h2>
+            <p class="text-xs text-gray-500 mt-1">关联习题: ${questions.length}</p>
+        </div>
+    `;
+    
+    questions.forEach(q => {
+        container.innerHTML += `
+            <div class="bg-white p-4 rounded-xl shadow-sm mb-3 border border-gray-100">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="bg-blue-50 text-primary text-[10px] px-1.5 py-0.5 rounded">${q.type}</span>
+                    <div class="flex gap-3 text-gray-400">
+                        <i class="fas fa-edit cursor-pointer hover:text-blue-500"></i>
+                        <i class="fas fa-trash cursor-pointer hover:text-red-500"></i>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-700 font-medium">${q.title}</p>
+            </div>
+        `;
+    });
+}
+
+function closeNoteQuestions() {
+    document.getElementById('note-questions-view').classList.add('translate-x-full');
+}
+
+function renderNoteRelatedQuestions(noteId) {
+    const container = document.getElementById('note-related-questions-container');
+    if (!container) return;
+    
+    const note = mockNotes.find(n => n.id === noteId);
+    if (!note || !note.questions || note.questions.length === 0) {
+        container.innerHTML = '<div class="text-center text-gray-400 text-xs py-4">暂无关联题目</div>';
+        return;
+    }
+    
+    container.innerHTML = '';
+    note.questions.forEach((q, index) => {
+        const item = document.createElement('div');
+        item.className = 'bg-gray-50 p-3 rounded-lg border border-gray-100 flex justify-between items-start group';
+        item.innerHTML = `
+            <div class="flex-1">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="bg-blue-100 text-primary text-[10px] px-1.5 rounded">${q.type || '未知'}</span>
+                    <span class="text-sm text-gray-800 font-medium line-clamp-2">${q.title}</span>
+                </div>
+                ${q.options ? `<div class="text-xs text-gray-500 pl-1 mt-1">${q.options.join(' | ')}</div>` : ''}
+            </div>
+            <div class="flex gap-2 ml-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                <button class="text-gray-400 hover:text-primary p-1" onclick="editNoteQuestion(${noteId}, ${index})" title="编辑"><i class="fas fa-edit"></i></button>
+                <button class="text-gray-400 hover:text-red-500 p-1" onclick="deleteNoteQuestion(${noteId}, ${index})" title="删除"><i class="fas fa-trash"></i></button>
+            </div>
+        `;
+        container.appendChild(item);
+    });
+}
+
+function saveNote(silent = false) {
+    const title = document.getElementById('note-title-input').value;
+    const content = document.getElementById('note-content-input').value;
+    const tag = document.getElementById('selected-note-node').textContent;
+    const finalTag = tag === '选择关联知识点...' ? '未分类' : tag;
+    
+    if (!title && !content && !silent) {
+        alert('笔记内容不能为空');
+        return false;
+    }
+    
+    if (!currentEditingNoteId) {
+        // Create new
+        const newNote = {
+            id: Date.now(),
+            title: title || "未命名笔记",
+            date: new Date().toISOString().split('T')[0],
+            count: 0,
+            tag: finalTag,
+            content: content,
+            questions: []
+        };
+        mockNotes.unshift(newNote);
+        currentEditingNoteId = newNote.id;
+    } else {
+        // Update existing
+        const note = mockNotes.find(n => n.id === currentEditingNoteId);
+        if (note) {
+            note.title = title || "未命名笔记";
+            note.content = content;
+            note.tag = finalTag;
+        }
+    }
+    
+    DataStore.set('notes', mockNotes);
+    renderNoteList();
+    renderNoteRelatedQuestions(currentEditingNoteId);
+    
+    if (!silent) {
+        // Simple toast simulation
+        const btn = document.querySelector('#note-edit-view header span[onclick="saveNote()"]');
+        const originalText = btn.textContent;
+        btn.textContent = '已保存';
+        btn.classList.add('text-green-500');
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.classList.remove('text-green-500');
+        }, 1500);
+    }
+    return true;
+}
+
+function addQuestionToNoteContext() {
+    // Ensure note is saved first so we have an ID
+    if (!currentEditingNoteId) {
+        if (!saveNote(true)) return; 
+    } else {
+        saveNote(true); // Auto-save current state just in case
+    }
+    
+    // Simple prompt for prototype
+    const title = prompt("请输入题目内容:");
+    if (!title) return;
+    
+    const type = prompt("请输入题目类型 (单选题/多选题/简答题):", "单选题");
+    
+    const note = mockNotes.find(n => n.id === currentEditingNoteId);
+    if (note) {
+        if (!note.questions) note.questions = [];
+        note.questions.push({
+            id: Date.now(),
+            title: title,
+            type: type || "简答题",
+            options: ["A. 选项一", "B. 选项二"] // Mock options
+        });
+        note.count = note.questions.length; // Update count
+        DataStore.set('notes', mockNotes);
+        renderNoteRelatedQuestions(currentEditingNoteId);
+        renderNoteList(); // Refresh list count
+    }
+}
+
+function deleteNoteQuestion(noteId, index) {
+    if (!confirm("确定要删除这道题目吗？")) return;
+    
+    const note = mockNotes.find(n => n.id === noteId);
+    if (note && note.questions) {
+        note.questions.splice(index, 1);
+        note.count = note.questions.length;
+        DataStore.set('notes', mockNotes);
+        renderNoteRelatedQuestions(noteId);
+        renderNoteList();
+    }
+}
+
+function editNoteQuestion(noteId, index) {
+    const note = mockNotes.find(n => n.id === noteId);
+    if (!note || !note.questions[index]) return;
+    
+    const q = note.questions[index];
+    const newTitle = prompt("修改题目内容:", q.title);
+    if (newTitle) {
+        q.title = newTitle;
+        DataStore.set('notes', mockNotes);
+        renderNoteRelatedQuestions(noteId);
+    }
+}
+
 function createNote() {
     if (window.location.pathname.includes('note.html')) {
+        currentEditingNoteId = null; // Reset
         document.getElementById('note-edit-view').classList.remove('hidden');
         document.getElementById('note-view-title').textContent = '新建笔记';
         document.getElementById('note-title-input').value = '';
         document.getElementById('selected-note-node').textContent = '选择关联知识点...';
         document.getElementById('note-content-input').value = '';
+        document.getElementById('note-related-questions-container').innerHTML = '<div class="text-center text-gray-400 text-xs py-4">保存笔记后可添加题目</div>';
     } else {
         window.location.href = 'note.html?action=create';
     }
@@ -170,12 +483,15 @@ function renderNoteList() {
         item.className = 'bg-white rounded-xl p-4 shadow-sm flex justify-between items-center cursor-pointer transition active:bg-gray-50';
         item.onclick = () => {
              // Switch to edit view
+            currentEditingNoteId = note.id;
             document.getElementById('note-edit-view').classList.remove('hidden');
             
             document.getElementById('note-view-title').textContent = '编辑笔记';
             document.getElementById('note-title-input').value = note.title;
             document.getElementById('selected-note-node').textContent = note.tag;
-            document.getElementById('note-content-input').value = "这是模拟的笔记内容...\n\n点击右上角生成题目体验 AI 功能。";
+            document.getElementById('note-content-input').value = note.content || "这是模拟的笔记内容...\n\n点击右上角生成题目体验 AI 功能。";
+            
+            renderNoteRelatedQuestions(note.id);
         };
         
         item.innerHTML = `
@@ -184,7 +500,7 @@ function renderNoteList() {
                 <p class="text-xs text-gray-400"><span class="inline-block bg-gray-100 px-1.5 py-0.5 rounded text-gray-500 mr-1">${note.tag}</span> ${note.date}</p>
             </div>
             <div class="text-right">
-                <span class="text-xl font-bold text-primary block">${note.count}</span>
+                <span class="text-xl font-bold text-primary block">${note.count || (note.questions ? note.questions.length : 0)}</span>
                 <div class="text-[10px] text-gray-400">已生成题目</div>
             </div>
         `;
@@ -195,6 +511,8 @@ function renderNoteList() {
 function closeNoteEdit() {
     document.getElementById('note-edit-view').classList.add('hidden');
 }
+
+let lastGeneratedQuestions = [];
 
 function generateQuestionsFromNote() {
     const content = document.getElementById('note-content-input').value;
@@ -216,18 +534,19 @@ function generateQuestionsFromNote() {
     
     setTimeout(() => {
         container.innerHTML = '';
-        const mockGenerated = [
-            { q: "根据笔记内容，Vue3 中使用 Proxy 替代了 Vue2 中的什么机制？", opts: ["Object.defineProperty", "Observer", "Watcher"] },
-            { q: "Ref 函数主要用于处理什么类型的数据？", opts: ["基本数据类型", "引用数据类型", "所有类型"] }
+        // Store globally for saving later
+        lastGeneratedQuestions = [
+            { id: Date.now(), title: "根据笔记内容，Vue3 中使用 Proxy 替代了 Vue2 中的什么机制？", type: "单选题", options: ["A. Object.defineProperty", "B. Observer", "C. Watcher"] },
+            { id: Date.now() + 1, title: "Ref 函数主要用于处理什么类型的数据？", type: "单选题", options: ["A. 基本数据类型", "B. 引用数据类型", "C. 所有类型"] }
         ];
         
-        mockGenerated.forEach((item, index) => {
+        lastGeneratedQuestions.forEach((item, index) => {
             const card = document.createElement('div');
             card.className = 'bg-gray-50 border border-gray-100 rounded-lg p-3 mb-3';
             card.innerHTML = `
-                <div class="font-bold mb-2 text-sm text-gray-800">${index + 1}. ${item.q}</div>
+                <div class="font-bold mb-2 text-sm text-gray-800">${index + 1}. ${item.title}</div>
                 <div class="text-xs text-gray-600 pl-2 space-y-1">
-                    ${item.opts.map((opt, i) => `<div>${String.fromCharCode(65+i)}. ${opt}</div>`).join('')}
+                    ${item.options.map(opt => `<div>${opt}</div>`).join('')}
                 </div>
             `;
             container.appendChild(card);
@@ -235,16 +554,48 @@ function generateQuestionsFromNote() {
         
         const summary = document.createElement('div');
         summary.className = 'text-center text-gray-500 text-xs mt-4';
-        summary.innerHTML = `<i class="fas fa-check-circle text-green-500 mr-1"></i> 成功生成 2 道题目`;
+        summary.innerHTML = `<i class="fas fa-check-circle text-green-500 mr-1"></i> 成功生成 ${lastGeneratedQuestions.length} 道题目`;
         container.appendChild(summary);
         
     }, 2000);
 }
 
 function saveGeneratedQuestions() {
-    alert('题目已成功保存到题库！');
-    closeModal('gen-result-overlay');
-    closeNoteEdit();
+    if (!lastGeneratedQuestions || lastGeneratedQuestions.length === 0) return;
+    
+    // If creating new note, save it first
+    if (!currentEditingNoteId) {
+        const title = document.getElementById('note-title-input').value || "未命名笔记";
+        const content = document.getElementById('note-content-input').value;
+        const tag = document.getElementById('selected-note-node').textContent;
+        const finalTag = tag === '选择关联知识点...' ? '未分类' : tag;
+        
+        const newNote = {
+            id: Date.now(),
+            title: title,
+            date: new Date().toISOString().split('T')[0],
+            count: 0,
+            tag: finalTag,
+            content: content,
+            questions: []
+        };
+        mockNotes.unshift(newNote);
+        currentEditingNoteId = newNote.id;
+    }
+    
+    const note = mockNotes.find(n => n.id === currentEditingNoteId);
+    if (note) {
+        if (!note.questions) note.questions = [];
+        note.questions.push(...lastGeneratedQuestions);
+        note.count = note.questions.length;
+        DataStore.set('notes', mockNotes);
+        
+        renderNoteRelatedQuestions(note.id);
+        renderNoteList();
+        
+        alert(`已保存 ${lastGeneratedQuestions.length} 道题目到笔记！`);
+        closeModal('gen-result-overlay');
+    }
 }
 
 // --- Tree & Question Logic ---

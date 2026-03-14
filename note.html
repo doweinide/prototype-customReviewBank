@@ -26,27 +26,65 @@
     <div class="w-full max-w-md bg-white flex flex-col h-screen relative shadow-2xl overflow-hidden">
         <!-- Note List View -->
         <div id="note-list-view" class="flex flex-col h-full">
-            <header class="h-12 flex items-center justify-center bg-white border-b border-gray-200 sticky top-0 z-10 shrink-0">
-                <i class="fas fa-arrow-left absolute left-4 text-lg text-gray-600 cursor-pointer p-1" onclick="navigateTo('index.html')"></i>
-                <h1 class="text-lg font-semibold text-gray-800">我的笔记</h1>
-                <span class="absolute right-4 text-lg text-gray-600 cursor-pointer p-1" onclick="createNote()"><i class="fas fa-plus"></i></span>
+            <header class="h-12 flex items-center justify-between px-4 bg-white border-b border-gray-200 sticky top-0 z-10 shrink-0">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-arrow-left text-lg text-gray-600 cursor-pointer" onclick="navigateTo('index.html')"></i>
+                    <h1 class="text-lg font-semibold text-gray-800">我的笔记</h1>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="flex bg-gray-100 rounded-lg p-0.5">
+                        <div class="p-1.5 rounded-md cursor-pointer text-gray-400 hover:text-primary transition" id="view-toggle-tree" onclick="toggleNoteView('tree')">
+                            <i class="fas fa-folder-tree text-sm"></i>
+                        </div>
+                        <div class="p-1.5 rounded-md cursor-pointer text-primary bg-white shadow-sm" id="view-toggle-list" onclick="toggleNoteView('list')">
+                            <i class="fas fa-list text-sm"></i>
+                        </div>
+                    </div>
+                    <i class="fas fa-plus text-lg text-gray-600 cursor-pointer" onclick="createNote()"></i>
+                </div>
             </header>
             <div class="flex-1 overflow-y-auto p-4 pb-20 bg-gray-50 no-scrollbar">
-                <div class="mb-4">
-                    <input type="text" placeholder="搜索笔记标题..." class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary">
+                
+                <!-- Tree View Container -->
+                <div id="note-tree-container" class="bg-white rounded-xl p-2 shadow-sm hidden">
+                    <!-- Tree Content -->
                 </div>
+
+                <!-- List View Container -->
                 <div id="note-list-container" class="space-y-3">
-                    <!-- Dynamic Content -->
+                    <div class="mb-4">
+                        <input type="text" placeholder="搜索笔记标题..." class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary">
+                    </div>
+                    <!-- List Content -->
                 </div>
+            </div>
+        </div>
+
+        <!-- Note Questions Management View -->
+        <div id="note-questions-view" class="fixed inset-0 bg-white z-50 flex flex-col hidden transform transition-transform duration-300 translate-x-full">
+            <header class="h-12 flex items-center justify-between px-4 bg-white border-b border-gray-200 sticky top-0 z-10 shrink-0">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-arrow-left text-lg text-gray-600 cursor-pointer" onclick="closeNoteQuestions()"></i>
+                    <h1 class="text-lg font-semibold text-gray-800">习题列表</h1>
+                </div>
+                <button class="text-sm font-medium text-primary" onclick="addQuestionToNoteContext()">新增习题</button>
+            </header>
+            <div class="flex-1 overflow-y-auto p-4 bg-gray-50 no-scrollbar" id="note-questions-list">
+                <!-- Question Items -->
             </div>
         </div>
 
         <!-- Note Edit/Generate View (Initially Hidden) -->
         <div id="note-edit-view" class="fixed inset-0 bg-white z-50 flex flex-col hidden transform transition-transform duration-300">
-            <header class="h-12 flex items-center justify-center bg-white border-b border-gray-200 sticky top-0 z-10 shrink-0">
-                <i class="fas fa-arrow-left absolute left-4 text-lg text-gray-600 cursor-pointer p-1" onclick="closeNoteEdit()"></i>
-                <h1 id="note-view-title" class="text-lg font-semibold text-gray-800">新建笔记</h1>
-                <span class="absolute right-4 text-sm font-bold text-primary cursor-pointer p-1" onclick="generateQuestionsFromNote()">生成题目</span>
+            <header class="h-12 flex items-center justify-between px-4 bg-white border-b border-gray-200 sticky top-0 z-10 shrink-0">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-arrow-left text-lg text-gray-600 cursor-pointer" onclick="closeNoteEdit()"></i>
+                    <h1 id="note-view-title" class="text-lg font-semibold text-gray-800">新建笔记</h1>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-sm font-medium text-gray-500 cursor-pointer" onclick="saveNote()">保存</span>
+                    <span class="text-sm font-bold text-primary cursor-pointer" onclick="generateQuestionsFromNote()">生成题目</span>
+                </div>
             </header>
             <div class="flex-1 overflow-y-auto p-4 flex flex-col">
                 <div class="mb-4">
@@ -60,6 +98,17 @@
                 </div>
                 <div class="flex-1 flex flex-col min-h-[300px]">
                     <textarea id="note-content-input" placeholder="在此输入笔记内容，AI 将自动分析并生成相关题目..." class="flex-1 w-full resize-none focus:outline-none text-sm leading-relaxed text-gray-700"></textarea>
+                </div>
+                
+                <!-- Related Questions Section -->
+                <div class="mt-4 pt-4 border-t border-gray-100">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-sm font-bold text-gray-700">关联题目</h3>
+                        <span class="text-xs text-primary cursor-pointer" onclick="addQuestionToNoteContext()">+ 新增</span>
+                    </div>
+                    <div id="note-related-questions-container" class="space-y-2">
+                        <!-- Questions will be rendered here -->
+                    </div>
                 </div>
             </div>
             
