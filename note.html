@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能笔记 - 自定义题库</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1890ff',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-gray-100 flex justify-center min-h-screen text-gray-800 font-sans">
+    <div class="w-full max-w-md bg-white flex flex-col h-screen relative shadow-2xl overflow-hidden">
+        <!-- Note List View -->
+        <div id="note-list-view" class="flex flex-col h-full">
+            <header class="h-12 flex items-center justify-center bg-white border-b border-gray-200 sticky top-0 z-10 shrink-0">
+                <i class="fas fa-arrow-left absolute left-4 text-lg text-gray-600 cursor-pointer p-1" onclick="navigateTo('index.html')"></i>
+                <h1 class="text-lg font-semibold text-gray-800">我的笔记</h1>
+                <span class="absolute right-4 text-lg text-gray-600 cursor-pointer p-1" onclick="createNote()"><i class="fas fa-plus"></i></span>
+            </header>
+            <div class="flex-1 overflow-y-auto p-4 pb-20 bg-gray-50 no-scrollbar">
+                <div class="mb-4">
+                    <input type="text" placeholder="搜索笔记标题..." class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary">
+                </div>
+                <div id="note-list-container" class="space-y-3">
+                    <!-- Dynamic Content -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Note Edit/Generate View (Initially Hidden) -->
+        <div id="note-edit-view" class="fixed inset-0 bg-white z-50 flex flex-col hidden transform transition-transform duration-300">
+            <header class="h-12 flex items-center justify-center bg-white border-b border-gray-200 sticky top-0 z-10 shrink-0">
+                <i class="fas fa-arrow-left absolute left-4 text-lg text-gray-600 cursor-pointer p-1" onclick="closeNoteEdit()"></i>
+                <h1 id="note-view-title" class="text-lg font-semibold text-gray-800">新建笔记</h1>
+                <span class="absolute right-4 text-sm font-bold text-primary cursor-pointer p-1" onclick="generateQuestionsFromNote()">生成题目</span>
+            </header>
+            <div class="flex-1 overflow-y-auto p-4 flex flex-col">
+                <div class="mb-4">
+                    <input type="text" id="note-title-input" placeholder="请输入笔记标题" class="w-full text-lg font-bold border-b border-gray-100 pb-2 focus:outline-none focus:border-primary">
+                </div>
+                <div class="mb-4 py-2">
+                    <div class="flex justify-between items-center p-2.5 bg-gray-50 rounded-lg text-gray-500 cursor-pointer" onclick="openKnowledgeTree('select-for-note')">
+                        <span id="selected-note-node" class="text-sm">选择关联知识点...</span>
+                        <i class="fas fa-tag text-gray-400"></i>
+                    </div>
+                </div>
+                <div class="flex-1 flex flex-col min-h-[300px]">
+                    <textarea id="note-content-input" placeholder="在此输入笔记内容，AI 将自动分析并生成相关题目..." class="flex-1 w-full resize-none focus:outline-none text-sm leading-relaxed text-gray-700"></textarea>
+                </div>
+            </div>
+            
+            <!-- Generation Result Overlay (Hidden) -->
+            <div id="gen-result-overlay" class="hidden fixed inset-0 bg-black/50 z-[60] items-end justify-center">
+                <div class="w-full h-[90%] bg-white rounded-t-2xl flex flex-col animate-slide-up">
+                    <div class="p-4 border-b border-gray-100 flex justify-between items-center shrink-0">
+                        <h3 class="text-base font-bold text-gray-800">AI 生成结果</h3>
+                        <span class="text-2xl text-gray-400 cursor-pointer hover:text-gray-600" onclick="closeModal('gen-result-overlay')">&times;</span>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-4" id="gen-result-container">
+                        <!-- Loading State or Results -->
+                    </div>
+                    <div class="p-4 border-t border-gray-100 shrink-0">
+                        <button class="w-full bg-primary text-white py-2.5 rounded-lg text-sm font-medium shadow-sm active:bg-blue-600 transition" onclick="saveGeneratedQuestions()">全部保存到题库</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modal for Knowledge Tree (Hidden by default) -->
+        <div id="tree-modal" class="hidden fixed inset-0 bg-black/50 z-[70] items-end justify-center">
+            <div class="w-full h-[80%] bg-white rounded-t-2xl flex flex-col animate-slide-up">
+                <div class="p-4 border-b border-gray-100 flex justify-between items-center shrink-0">
+                    <h3 class="text-base font-bold text-gray-800">选择知识点</h3>
+                    <span class="text-2xl text-gray-400 cursor-pointer hover:text-gray-600" onclick="closeModal('tree-modal')">&times;</span>
+                </div>
+                <div class="p-3 border-b border-gray-50 bg-gray-50/50">
+                    <input type="text" id="tree-search-input" placeholder="搜索知识点..." class="w-full p-2 border border-gray-200 rounded text-sm focus:outline-none focus:border-primary" oninput="searchTree(this.value)">
+                </div>
+                <div class="flex-1 overflow-y-auto p-4">
+                    <div class="tree-level" id="tree-root">
+                        <!-- Dynamic Tree Content -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <script src="script.js"></script>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('action') === 'create') {
+            createNote();
+        }
+    </script>
+    <style>
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        .animate-slide-up {
+            animation: slideUp 0.3s ease-out forwards;
+        }
+    </style>
+</body>
+</html>
