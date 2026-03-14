@@ -641,3 +641,58 @@ textarea {
 .footer-action {
     margin-top: 20px;
 }
+
+/* Add Question Tabs */
+.tab-header {
+    display: flex;
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 4px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.tab-btn {
+    flex: 1;
+    text-align: center;
+    padding: 8px;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tab-btn.active {
+    background-color: var(--primary-color);
+    color: #fff;
+    font-weight: 500;
+}
+
+/* Option Explanation */
+.option-wrapper {
+    margin-bottom: 12px;
+}
+
+.option-explain {
+    width: 100%;
+    margin-top: 5px;
+    padding: 8px;
+    border: 1px dashed #ddd;
+    border-radius: 4px;
+    font-size: 12px;
+    background-color: #fafafa;
+}
+
+.option-explain.hidden {
+    display: none;
+}
+
+.fa-comment-dots {
+    color: #999;
+    cursor: pointer;
+}
+
+.fa-comment-dots:hover {
+    color: var(--primary-color);
+}

@@ -129,6 +129,12 @@ function closeModal(modalId) {
 // Knowledge Tree Logic
 function openKnowledgeTree(mode = 'normal') {
     const container = document.getElementById(mode === 'manage' ? 'manage-tree-root' : 'tree-root');
+    // Clear search
+    const searchInput = document.getElementById('tree-search-input');
+    if (searchInput) {
+        searchInput.value = '';
+    }
+    
     renderTree(knowledgeTreeData, container, mode);
     
     if (mode === 'normal') {
@@ -137,6 +143,51 @@ function openKnowledgeTree(mode = 'normal') {
         renderTree(knowledgeTreeData, document.getElementById('tree-root'), 'select');
         openModal('tree-modal');
     }
+}
+
+function searchTree(keyword) {
+    const container = document.getElementById('tree-root');
+    if (!keyword) {
+        renderTree(knowledgeTreeData, container, 'select'); // Assume select mode for now or detect
+        return;
+    }
+    
+    // Simple filter logic: flat list of matches
+    const matches = [];
+    function traverse(nodes) {
+        nodes.forEach(node => {
+            if (node.title.toLowerCase().includes(keyword.toLowerCase())) {
+                matches.push(node);
+            }
+            if (node.children) {
+                traverse(node.children);
+            }
+        });
+    }
+    traverse(knowledgeTreeData);
+    
+    // Render matches flat
+    container.innerHTML = '';
+    if (matches.length === 0) {
+        container.innerHTML = '<div style="padding:10px; color:#999">无搜索结果</div>';
+        return;
+    }
+    
+    matches.forEach(node => {
+         const nodeEl = document.createElement('div');
+         nodeEl.className = 'tree-node';
+         nodeEl.style.marginLeft = '0'; // Flat view
+         
+         const clickHandler = `selectNodeForQuestion(${node.id}, '${node.title}', this)`;
+         
+         nodeEl.innerHTML = `
+            <div class="node-content" onclick="${clickHandler}">
+                <i class="fas fa-search node-icon" style="font-size: 10px;"></i>
+                <span class="node-title">${node.title}</span>
+            </div>
+        `;
+        container.appendChild(nodeEl);
+    });
 }
 
 function renderTree(data, container, mode = 'normal') {
@@ -172,8 +223,9 @@ function renderTree(data, container, mode = 'normal') {
         } else if (mode === 'manage') {
             actionBtn = `
                 <div class="node-actions">
-                    <button class="btn-small" style="background:#52c41a" onclick="event.stopPropagation(); addNode(${node.id})"><i class="fas fa-plus"></i></button>
-                    <button class="btn-small" style="background:#fa8c16" onclick="event.stopPropagation(); editNode(${node.id})"><i class="fas fa-edit"></i></button>
+                    <button class="btn-small" style="background:#52c41a" title="添加子节点" onclick="event.stopPropagation(); addNode(${node.id})"><i class="fas fa-folder-plus"></i></button>
+                    <button class="btn-small" style="background:#1890ff" title="添加题目" onclick="event.stopPropagation(); addQuestionToNode(${node.id}, '${node.title}')"><i class="fas fa-file-circle-plus"></i></button>
+                    <button class="btn-small" style="background:#fa8c16" title="编辑节点" onclick="event.stopPropagation(); editNode(${node.id})"><i class="fas fa-edit"></i></button>
                 </div>`;
         } else if (mode === 'select') {
              // Selection mode for adding question
@@ -277,8 +329,75 @@ function addKnowledgeTree() {
     renderTree(knowledgeTreeData, document.getElementById('manage-tree-root'), 'manage');
 }
 
+// Add Question Logic
+function switchAddTab(tab) {
+    const tabs = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.add-tab-content');
+    
+    tabs.forEach(t => t.classList.remove('active'));
+    contents.forEach(c => c.style.display = 'none');
+    
+    if (tab === 'single') {
+        tabs[0].classList.add('active');
+        document.getElementById('add-single-form').style.display = 'block';
+    } else {
+        tabs[1].classList.add('active');
+        document.getElementById('add-batch-form').style.display = 'block';
+    }
+}
+
+function toggleOptionExplain(icon) {
+    const wrapper = icon.closest('.option-wrapper');
+    const explainInput = wrapper.querySelector('.option-explain');
+    explainInput.classList.toggle('hidden');
+    if (!explainInput.classList.contains('hidden')) {
+        explainInput.focus();
+    }
+}
+
+function addOptionInput() {
+    const container = document.getElementById('options-container');
+    const wrapper = document.createElement('div');
+    wrapper.className = 'option-wrapper';
+    wrapper.innerHTML = `
+        <div class="option-input-group">
+            <input type="radio" name="correct-opt" title="设为正确答案">
+            <input type="text" placeholder="选项">
+            <i class="fas fa-comment-dots" onclick="toggleOptionExplain(this)" title="添加解析"></i>
+        </div>
+        <input type="text" class="option-explain hidden" placeholder="选项解析...">
+    `;
+    container.appendChild(wrapper);
+}
+
+function processBatchImport() {
+    const jsonStr = document.getElementById('batch-input').value;
+    try {
+        const data = JSON.parse(jsonStr);
+        if (Array.isArray(data)) {
+            alert(`成功解析 ${data.length} 道题目！\n(原型演示：已导入数据库)`);
+            closeView('add-question-view');
+        } else {
+            alert('JSON 格式错误：必须是数组格式');
+        }
+    } catch (e) {
+        alert('JSON 解析失败，请检查格式');
+    }
+}
+
 function addQuestion() {
+    // Reset form or selection
+    document.getElementById('selected-node-name').textContent = '请选择知识点...';
+    delete document.getElementById('selected-node-name').dataset.id;
     openView('add-question-view');
+}
+
+function addQuestionToNode(id, title) {
+    openView('add-question-view');
+    // Pre-fill selection
+    const nameEl = document.getElementById('selected-node-name');
+    nameEl.textContent = title;
+    nameEl.dataset.id = id;
 }
 
 function saveQuestion() {
