@@ -918,6 +918,20 @@ function openWrongBook() {
     alert('打开错题本...');
 }
 
+// --- Home Page Logic ---
+function continueLastQuiz() {
+    // In a real app, this would load the last active session ID
+    // For prototype, we mock resuming a specific topic
+    const lastTopic = {
+        id: 311,
+        title: "Vue3 响应式原理"
+    };
+    
+    if (confirm(`继续上次练习：${lastTopic.title}？`)) {
+        window.location.href = `quiz.html?mode=tree&id=${lastTopic.id}&title=${encodeURIComponent(lastTopic.title)}`;
+    }
+}
+
 // --- Center Page Logic ---
 function openSettings() {
     openModal('settings-modal');
