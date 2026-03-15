@@ -20,20 +20,24 @@ const defaultTreeData = [
                 id: 11,
                 title: "HTML5",
                 level: 2,
+                total: 20,
+                practice: 5,
                 children: [
-                    { id: 111, title: "语义化标签", level: 3 },
-                    { id: 112, title: "多媒体标签", level: 3 },
-                    { id: 113, title: "Web Storage", level: 3 }
+                    { id: 111, title: "语义化标签", level: 3, total: 10, practice: 2 },
+                    { id: 112, title: "多媒体标签", level: 3, total: 5, practice: 1 },
+                    { id: 113, title: "Web Storage", level: 3, total: 5, practice: 2 }
                 ]
             },
             {
                 id: 12,
                 title: "CSS3",
                 level: 2,
+                total: 30,
+                practice: 12,
                 children: [
-                    { id: 121, title: "Flex布局", level: 3 },
-                    { id: 122, title: "Grid布局", level: 3 },
-                    { id: 123, title: "动画与过渡", level: 3 }
+                    { id: 121, title: "Flex布局", level: 3, total: 10, practice: 5 },
+                    { id: 122, title: "Grid布局", level: 3, total: 10, practice: 3 },
+                    { id: 123, title: "动画与过渡", level: 3, total: 10, practice: 4 }
                 ]
             }
         ]
@@ -47,19 +51,23 @@ const defaultTreeData = [
                 id: 21,
                 title: "ES6+",
                 level: 2,
+                total: 40,
+                practice: 15,
                 children: [
-                    { id: 211, title: "Promise/Async", level: 3 },
-                    { id: 212, title: "Class类", level: 3 },
-                    { id: 213, title: "模块化", level: 3 }
+                    { id: 211, title: "Promise/Async", level: 3, total: 15, practice: 8 },
+                    { id: 212, title: "Class类", level: 3, total: 10, practice: 2 },
+                    { id: 213, title: "模块化", level: 3, total: 15, practice: 5 }
                 ]
             },
             {
                 id: 22,
                 title: "原型与继承",
                 level: 2,
+                total: 20,
+                practice: 10,
                 children: [
-                    { id: 221, title: "原型链", level: 3 },
-                    { id: 222, title: "继承方式", level: 3 }
+                    { id: 221, title: "原型链", level: 3, total: 10, practice: 6 },
+                    { id: 222, title: "继承方式", level: 3, total: 10, practice: 4 }
                 ]
             }
         ]
@@ -73,19 +81,23 @@ const defaultTreeData = [
                 id: 31,
                 title: "基础核心",
                 level: 2,
+                total: 25,
+                practice: 20,
                 children: [
-                    { id: 311, title: "响应式原理", level: 3 },
-                    { id: 312, title: "组件通信", level: 3 },
-                    { id: 313, title: "生命周期", level: 3 }
+                    { id: 311, title: "响应式原理", level: 3, total: 10, practice: 8 },
+                    { id: 312, title: "组件通信", level: 3, total: 8, practice: 8 },
+                    { id: 313, title: "生命周期", level: 3, total: 7, practice: 4 }
                 ]
             },
             {
                 id: 32,
                 title: "Vue Router",
                 level: 2,
+                total: 15,
+                practice: 3,
                 children: [
-                    { id: 321, title: "路由守卫", level: 3 },
-                    { id: 322, title: "动态路由", level: 3 }
+                    { id: 321, title: "路由守卫", level: 3, total: 8, practice: 2 },
+                    { id: 322, title: "动态路由", level: 3, total: 7, practice: 1 }
                 ]
             }
         ]
@@ -678,10 +690,19 @@ function renderTree(data, container, mode = 'normal') {
         let clickHandler = `toggleNode(this)`;
 
         if (mode === 'normal') {
+            const countInfo = (node.total !== undefined) 
+                ? `<span class="text-[10px] text-gray-400 mr-2 shrink-0">${node.practice || 0}/${node.total}</span>` 
+                : '';
+            
             if (node.level === 2) {
-                actionBtn = `<button class="ml-auto bg-primary text-white text-[10px] px-2 py-0.5 rounded shadow-sm active:bg-blue-600" onclick="event.stopPropagation(); startQuiz('level2', ${node.id}, '${node.title}')">做题</button>`;
+                actionBtn = `<div class="ml-auto flex items-center">${countInfo}<button class="bg-primary text-white text-[10px] px-2 py-0.5 rounded shadow-sm active:bg-blue-600 shrink-0" onclick="event.stopPropagation(); startQuiz('level2', ${node.id}, '${node.title}')">做题</button></div>`;
             } else if (node.level === 3) {
-                actionBtn = `<button class="ml-auto bg-primary text-white text-[10px] px-2 py-0.5 rounded shadow-sm active:bg-blue-600" onclick="event.stopPropagation(); startQuiz('level3', ${node.id}, '${node.title}')">做题</button>`;
+                actionBtn = `<div class="ml-auto flex items-center">${countInfo}<button class="bg-primary text-white text-[10px] px-2 py-0.5 rounded shadow-sm active:bg-blue-600 shrink-0" onclick="event.stopPropagation(); startQuiz('level3', ${node.id}, '${node.title}')">做题</button></div>`;
+            } else {
+                 // For level 1 or others without button, just show count if exists
+                 if (countInfo) {
+                     actionBtn = `<div class="ml-auto">${countInfo}</div>`;
+                 }
             }
         } else if (mode === 'manage') {
             actionBtn = `
@@ -895,6 +916,95 @@ function addQuestionToNode(id, title) {
 
 function openWrongBook() {
     alert('打开错题本...');
+}
+
+// --- Center Page Logic ---
+function openSettings() {
+    openModal('settings-modal');
+}
+
+function openMessages() {
+    openModal('messages-modal');
+}
+
+function openDataBackup() {
+    openModal('backup-modal');
+}
+
+function openHelp() {
+    openModal('help-modal');
+}
+
+function openAbout() {
+    alert("智库 AI - 构建你的第二大脑\nVersion: 1.0.0 Alpha\n\nDesigned for Future Learning.");
+}
+
+function clearAllData() {
+    if (confirm("警告：这将清除所有本地存储的数据（笔记、知识树、做题记录），操作不可撤销！\n\n确定要继续吗？")) {
+        localStorage.clear();
+        alert("数据已清除，页面将刷新。");
+        window.location.reload();
+    }
+}
+
+function markAllRead() {
+    const list = document.getElementById('message-list');
+    const dots = list.querySelectorAll('.bg-red-500');
+    dots.forEach(dot => dot.remove());
+    
+    // Remove badge in menu
+    const badge = document.querySelector('.text-red-500.rounded-full'); // simplified selector
+    if (badge) badge.remove();
+    
+    alert("所有消息已标记为已读");
+}
+
+function exportAllData() {
+    const data = {
+        knowledgeTree: DataStore.get('knowledgeTree', defaultTreeData),
+        notes: DataStore.get('notes', defaultNotes),
+        exportDate: new Date().toISOString()
+    };
+    
+    const json = JSON.stringify(data, null, 2);
+    
+    // Create download
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `zhiku_backup_${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function importAllData(input) {
+    const file = input.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (data.knowledgeTree && data.notes) {
+                if (confirm(`检测到备份文件 (${data.exportDate})\n\n确定要覆盖当前所有数据吗？`)) {
+                    DataStore.set('knowledgeTree', data.knowledgeTree);
+                    DataStore.set('notes', data.notes);
+                    alert("数据恢复成功！页面将刷新。");
+                    window.location.reload();
+                }
+            } else {
+                alert("无效的备份文件格式");
+            }
+        } catch (err) {
+            alert("文件解析失败：" + err.message);
+        }
+    };
+    reader.readAsText(file);
+    // Reset input
+    input.value = '';
 }
 
 // Chart Initialization
