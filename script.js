@@ -953,6 +953,351 @@ function initCharts() {
     chartsInitialized = true;
 }
 
+// --- Quiz Engine Logic ---
+
+const quizMockData = [
+    {
+        id: 1,
+        title: "在 Vue 3 中，使用哪个函数来定义引用类型的响应式对象？",
+        type: "单选题",
+        options: ["ref()", "reactive()", "computed()", "watch()"],
+        answer: 1, 
+        explanation: "reactive() 主要用于定义对象、数组等引用类型的响应式数据，而 ref() 主要用于定义基本类型，虽然 ref 也可以定义对象（内部调用 reactive）。"
+    },
+    {
+        id: 2,
+        title: "下列哪个生命周期钩子在 Vue 3 Composition API 中不存在？",
+        type: "单选题",
+        options: ["onMounted", "onCreated", "onUpdated", "onUnmounted"],
+        answer: 1,
+        explanation: "Vue 3 Composition API 中没有 onCreated 和 onBeforeCreate，直接在 setup() 函数中执行即可。"
+    },
+    {
+        id: 3,
+        title: "Vue Router 4 中获取当前路由参数的 Hook 是？",
+        type: "单选题",
+        options: ["useRouter", "useRoute", "useParams", "useQuery"],
+        answer: 1,
+        explanation: "useRoute() 用于获取当前路由信息（包括 params, query 等），useRouter() 用于执行路由跳转。"
+    },
+    {
+        id: 4,
+        title: "Pinia 相比 Vuex 的主要改进不包括？",
+        type: "单选题",
+        options: ["去除了 Mutation", "更好的 TypeScript 支持", "不再支持 Options API", "体积更小"],
+        answer: 2,
+        explanation: "Pinia 依然支持 Options API（通过 mapState, mapActions 等），同时也完美支持 Composition API。"
+    },
+    {
+        id: 5,
+        title: "Vite 在开发环境下使用什么方式打包？",
+        type: "单选题",
+        options: ["Webpack", "Rollup", "Esbuild (No-bundle)", "Parcel"],
+        answer: 2,
+        explanation: "Vite 在开发环境下基于浏览器原生 ES Module (No-bundle) 进行开发，生产环境使用 Rollup 打包。"
+    }
+];
+
+let quizState = {
+    questions: [],
+    currentIndex: 0,
+    userAnswers: {}, // { questionIndex: optionIndex }
+    mode: 'immediate', // 'immediate' | 'submit_all'
+    isReview: false,
+    submitted: false // specific for submit_all mode to check if submitted
+};
+
+function initQuizPage() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const title = urlParams.get('title');
+    const mode = urlParams.get('mode'); // 'random', 'tree', 'review'
+    
+    if (title) {
+        document.getElementById('quiz-title').textContent = title;
+    }
+    
+    // Default mock load
+    // In real app, fetch based on IDs or Tree Node
+    quizState.questions = [...quizMockData]; 
+    quizState.currentIndex = 0;
+    quizState.userAnswers = {};
+    quizState.isReview = false;
+    quizState.submitted = false;
+    
+    // Set initial mode from UI select
+    const modeSelect = document.getElementById('quiz-mode-select');
+    if (modeSelect) {
+        quizState.mode = modeSelect.value;
+    }
+
+    renderQuizQuestion();
+}
+
+function changeQuizMode(newMode) {
+    if (Object.keys(quizState.userAnswers).length > 0) {
+        if (!confirm("切换模式将清空当前进度，确定吗？")) {
+            // Revert select
+            document.getElementById('quiz-mode-select').value = quizState.mode;
+            return;
+        }
+    }
+    quizState.mode = newMode;
+    quizState.userAnswers = {};
+    quizState.currentIndex = 0;
+    quizState.submitted = false;
+    quizState.isReview = false;
+    
+    document.getElementById('quiz-container').classList.remove('hidden');
+    document.getElementById('quiz-overview').classList.add('hidden');
+    document.getElementById('quiz-action-bar').classList.remove('hidden');
+    
+    renderQuizQuestion();
+}
+
+function renderQuizQuestion() {
+    const container = document.getElementById('quiz-container');
+    const question = quizState.questions[quizState.currentIndex];
+    const total = quizState.questions.length;
+    
+    // Update Progress
+    document.getElementById('quiz-progress').textContent = `${quizState.currentIndex + 1}/${total}`;
+    
+    // Check if answered
+    const userAnswer = quizState.userAnswers[quizState.currentIndex];
+    const isAnswered = userAnswer !== undefined;
+    const isCorrect = isAnswered && userAnswer === question.answer;
+    
+    // Determine View State
+    // Immediate mode: show result if answered
+    // Submit All mode: show result only if submitted (isReview = true)
+    const showResult = (quizState.mode === 'immediate' && isAnswered) || 
+                       (quizState.mode === 'submit_all' && quizState.submitted);
+
+    let optionsHtml = '';
+    question.options.forEach((opt, idx) => {
+        let bgClass = 'bg-white border-gray-200';
+        let textClass = 'text-gray-800';
+        let icon = '';
+        
+        if (showResult) {
+            if (idx === question.answer) {
+                bgClass = 'bg-green-50 border-green-500 text-green-700';
+                icon = '<i class="fas fa-check float-right mt-1"></i>';
+            } else if (idx === userAnswer) {
+                bgClass = 'bg-red-50 border-red-500 text-red-700';
+                icon = '<i class="fas fa-times float-right mt-1"></i>';
+            }
+        } else if (idx === userAnswer) {
+             bgClass = 'bg-blue-50 border-primary text-primary';
+        }
+        
+        // Disable click if showing result
+        const clickAttr = showResult ? '' : `onclick="selectQuizOption(${idx})"`;
+        const cursorClass = showResult ? 'cursor-default' : 'cursor-pointer active:bg-blue-50';
+
+        optionsHtml += `
+            <div class="option-item border rounded-xl p-4 mb-3 transition ${bgClass} ${cursorClass}" ${clickAttr}>
+                <span class="font-medium mr-2">${String.fromCharCode(65 + idx)}.</span>
+                ${opt}
+                ${icon}
+            </div>
+        `;
+    });
+
+    let explanationHtml = '';
+    if (showResult) {
+        explanationHtml = `
+            <div class="mt-6 p-4 bg-gray-100 rounded-xl animate-fade-in">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="text-xs font-bold px-2 py-0.5 rounded ${isCorrect ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}">
+                        ${isCorrect ? '回答正确' : '回答错误'}
+                    </span>
+                    <span class="text-xs text-gray-500">正确答案: ${String.fromCharCode(65 + question.answer)}</span>
+                </div>
+                <div class="text-sm text-gray-600 leading-relaxed">
+                    <span class="font-bold text-gray-700">解析：</span>${question.explanation}
+                </div>
+            </div>
+        `;
+    }
+
+    container.innerHTML = `
+        <div class="bg-white rounded-xl p-5 mb-4 shadow-sm min-h-[120px] flex flex-col justify-center">
+            <span class="inline-block px-2 py-0.5 bg-blue-50 text-primary rounded text-xs w-fit mb-2">${question.type}</span>
+            <p class="text-base font-medium leading-relaxed text-gray-800">${question.title}</p>
+        </div>
+        <div class="space-y-1">
+            ${optionsHtml}
+        </div>
+        ${explanationHtml}
+    `;
+    
+    updateActionButtons();
+}
+
+function selectQuizOption(idx) {
+    if (quizState.mode === 'immediate' && quizState.userAnswers[quizState.currentIndex] !== undefined) return; // Already answered
+    
+    quizState.userAnswers[quizState.currentIndex] = idx;
+    renderQuizQuestion();
+}
+
+function prevQuestion() {
+    if (quizState.currentIndex > 0) {
+        quizState.currentIndex--;
+        renderQuizQuestion();
+    }
+}
+
+function handleAction() {
+    const total = quizState.questions.length;
+    const isLast = quizState.currentIndex === total - 1;
+    const isAnswered = quizState.userAnswers[quizState.currentIndex] !== undefined;
+
+    // Review Mode (Post-submission or traversing finished immediate quiz)
+    if (quizState.submitted || (quizState.mode === 'immediate' && Object.keys(quizState.userAnswers).length === total)) {
+        if (isLast) {
+            showQuizOverview();
+        } else {
+            quizState.currentIndex++;
+            renderQuizQuestion();
+        }
+        return;
+    }
+
+    if (quizState.mode === 'immediate') {
+        // Immediate Logic
+        if (!isAnswered) {
+            alert('请先选择一个答案');
+            return;
+        }
+        
+        if (isLast) {
+             // Finish Immediate Quiz
+             quizState.submitted = true; // Mark as done so we enter review mode behavior
+             showQuizOverview();
+        } else {
+            quizState.currentIndex++;
+            renderQuizQuestion();
+        }
+        
+    } else {
+        // Submit All Logic
+        if (isLast) {
+            if (Object.keys(quizState.userAnswers).length < total) {
+                if (!confirm(`还有 ${total - Object.keys(quizState.userAnswers).length} 道题未做，确定提交吗？`)) return;
+            }
+            quizState.submitted = true;
+            showQuizOverview();
+        } else {
+            quizState.currentIndex++;
+            renderQuizQuestion();
+        }
+    }
+}
+
+function updateActionButtons() {
+    const prevBtn = document.getElementById('prev-btn');
+    const actionBtn = document.getElementById('action-btn');
+    
+    prevBtn.disabled = quizState.currentIndex === 0;
+    prevBtn.classList.toggle('opacity-30', quizState.currentIndex === 0);
+    
+    const isLast = quizState.currentIndex === quizState.questions.length - 1;
+    const isReviewing = quizState.submitted || (quizState.mode === 'immediate' && quizState.submitted); // quizState.submitted is enough
+
+    if (isReviewing) {
+        actionBtn.textContent = isLast ? '返回概览' : '下一题';
+        actionBtn.classList.remove('bg-gray-300');
+        actionBtn.classList.add('bg-primary');
+        return;
+    }
+    
+    if (quizState.mode === 'immediate') {
+        const isAnswered = quizState.userAnswers[quizState.currentIndex] !== undefined;
+        
+        if (isAnswered) {
+             actionBtn.textContent = isLast ? '查看结果' : '下一题';
+             actionBtn.classList.remove('bg-gray-300');
+             actionBtn.classList.add('bg-primary');
+        } else {
+             actionBtn.textContent = '请选择';
+             actionBtn.classList.add('bg-gray-300');
+             actionBtn.classList.remove('bg-primary');
+        }
+    } else {
+        // Submit All Mode
+        actionBtn.textContent = isLast ? '提交试卷' : '下一题';
+        actionBtn.classList.remove('bg-gray-300');
+        actionBtn.classList.add('bg-primary');
+    }
+}
+
+function showQuizOverview() {
+    document.getElementById('quiz-container').classList.add('hidden');
+    document.getElementById('quiz-action-bar').classList.add('hidden');
+    document.getElementById('quiz-overview').classList.remove('hidden');
+    document.getElementById('quiz-mode-select').disabled = true; // Disable mode switch in overview
+    
+    // Calculate Score
+    let correct = 0;
+    quizState.questions.forEach((q, idx) => {
+        if (quizState.userAnswers[idx] === q.answer) correct++;
+    });
+    
+    document.getElementById('score-display').textContent = Math.round((correct / quizState.questions.length) * 100);
+    document.getElementById('total-count').textContent = quizState.questions.length;
+    document.getElementById('correct-count').textContent = correct;
+    
+    // Generate Grid
+    const grid = document.getElementById('overview-grid');
+    grid.innerHTML = '';
+    
+    quizState.questions.forEach((q, idx) => {
+        const ua = quizState.userAnswers[idx];
+        let colorClass = 'bg-gray-100 text-gray-400'; // Unanswered
+        
+        if (ua !== undefined) {
+            if (ua === q.answer) {
+                colorClass = 'bg-green-100 text-green-600 border border-green-200';
+            } else {
+                colorClass = 'bg-red-100 text-red-600 border border-red-200';
+            }
+        }
+        
+        const item = document.createElement('div');
+        item.className = `aspect-square rounded-lg flex items-center justify-center font-bold text-sm cursor-pointer hover:opacity-80 transition ${colorClass}`;
+        item.textContent = idx + 1;
+        item.onclick = () => reviewQuestion(idx);
+        grid.appendChild(item);
+    });
+}
+
+function reviewQuestion(index) {
+    quizState.currentIndex = index;
+    
+    document.getElementById('quiz-container').classList.remove('hidden');
+    document.getElementById('quiz-action-bar').classList.remove('hidden');
+    document.getElementById('quiz-overview').classList.add('hidden');
+    
+    renderQuizQuestion();
+}
+
+function restartQuiz() {
+    if (confirm('确定要重新开始吗？')) {
+        quizState.userAnswers = {};
+        quizState.currentIndex = 0;
+        quizState.submitted = false;
+        
+        document.getElementById('quiz-container').classList.remove('hidden');
+        document.getElementById('quiz-action-bar').classList.remove('hidden');
+        document.getElementById('quiz-overview').classList.add('hidden');
+        document.getElementById('quiz-mode-select').disabled = false;
+        
+        renderQuizQuestion();
+    }
+}
+
 // Global click for modal close
 window.onclick = function(event) {
     const modal = document.getElementById('tree-modal');
