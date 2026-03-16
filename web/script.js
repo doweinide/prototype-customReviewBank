@@ -206,6 +206,145 @@ function initNote() {
 
 function initQuiz() {
     renderTree(knowledgeTreeData, document.getElementById('web-manage-tree-root'), 'quiz');
+    initQuizDashboardCharts();
+    
+    // Check URL params for mode
+    const urlParams = new URLSearchParams(window.location.search);
+    const mode = urlParams.get('mode');
+    if (mode) {
+        if (mode === 'special') showPracticeView('special');
+        else if (mode === 'random') { showPracticeView('random'); startQuizSession('random'); }
+        else if (mode === 'wrong') { showPracticeView('wrong'); startQuizSession('wrong'); }
+        else if (mode === 'new') { showPracticeView('new'); startQuizSession('new'); }
+    }
+}
+
+function showPracticeView(type) {
+    document.getElementById('quiz-dashboard').classList.add('hidden');
+    document.getElementById('quiz-practice-view').classList.remove('hidden');
+    
+    const sidebar = document.getElementById('quiz-sidebar');
+    const content = document.getElementById('quiz-content-wrapper');
+    const title = document.getElementById('practice-mode-title');
+    const placeholder = document.getElementById('quiz-placeholder');
+    const activeView = document.getElementById('quiz-active-view');
+    const resultView = document.getElementById('quiz-result-view');
+    
+    // Reset Views
+    placeholder.classList.remove('hidden');
+    activeView.classList.add('hidden');
+    resultView.classList.add('hidden');
+    
+    if (type === 'special') {
+        sidebar.classList.remove('hidden');
+        content.classList.remove('col-span-12');
+        content.classList.add('col-span-9');
+        title.textContent = '专项练习模式';
+        // Wait for user to select node
+    } else {
+        sidebar.classList.add('hidden');
+        content.classList.remove('col-span-9');
+        content.classList.add('col-span-12');
+        
+        // Hide placeholder immediately for auto-start modes
+        placeholder.classList.add('hidden');
+        activeView.classList.remove('hidden');
+        
+        if (type === 'random') {
+            title.textContent = '随机练习模式';
+            document.getElementById('quiz-title').textContent = '随机抽查练习';
+            document.getElementById('quiz-subtitle').textContent = '共 5 题 • 综合测试';
+        } else if (type === 'wrong') {
+            title.textContent = '错题攻坚模式';
+            document.getElementById('quiz-title').textContent = '错题复习';
+            document.getElementById('quiz-subtitle').textContent = '共 12 题 • 重点突破';
+        } else if (type === 'new') {
+            title.textContent = '新题速递模式';
+            document.getElementById('quiz-title').textContent = '新题尝鲜';
+            document.getElementById('quiz-subtitle').textContent = '共 10 题 • 查漏补缺';
+        }
+        
+        // Hide intro cards & preview for direct modes
+        document.getElementById('quiz-intro-cards').classList.add('hidden');
+        document.getElementById('quiz-preview-section').classList.add('hidden');
+    }
+}
+
+function showQuizDashboard() {
+    document.getElementById('quiz-practice-view').classList.add('hidden');
+    document.getElementById('quiz-dashboard').classList.remove('hidden');
+    // Reset state
+    currentQuizState.isSubmitted = false;
+    currentQuizState.currentIndex = 0;
+}
+
+function showSpecialPractice() {
+    showPracticeView('special');
+}
+
+function startRandomPractice() {
+    showPracticeView('random');
+    startQuizSession('random');
+}
+
+function startWrongPractice() {
+    showPracticeView('wrong');
+    startQuizSession('wrong');
+}
+
+function startNewKnowledgePractice() {
+    showPracticeView('new');
+    startQuizSession('new');
+}
+
+function initQuizDashboardCharts() {
+    // 1. Activity Chart
+    const ctxActivity = document.getElementById('quizActivityChart');
+    if (ctxActivity) {
+         new Chart(ctxActivity, {
+            type: 'bar',
+            data: {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [{
+                    label: '练习题数',
+                    data: [12, 19, 3, 5, 2, 3, 15],
+                    backgroundColor: '#3b82f6',
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { borderDash: [2, 2] } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    // 2. Daily Goal Chart (Doughnut)
+    const ctxGoal = document.getElementById('quizDailyGoalChart');
+    if (ctxGoal) {
+        new Chart(ctxGoal, {
+            type: 'doughnut',
+            data: {
+                labels: ['Completed', 'Remaining'],
+                datasets: [{
+                    data: [15, 15],
+                    backgroundColor: ['#10b981', '#f1f5f9'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '75%',
+                plugins: { legend: { display: false }, tooltip: { enabled: false } }
+            }
+        });
+    }
 }
 
 function initCenter() {
@@ -326,9 +465,363 @@ function saveNote() {
     alert('保存成功');
 }
 
-// --- Knowledge Management Logic ---
+// --- Quiz Execution Logic ---
 
+let currentQuizState = {
+    questions: [],
+    currentIndex: 0,
+    userAnswers: {}, // { qId: answer }
+    mode: 'immediate', // 'immediate' or 'submit_all'
+    isSubmitted: false,
+    sessionType: 'special' // 'special', 'random', 'wrong', 'new'
+};
+
+function setQuizMode(mode) {
+    currentQuizState.mode = mode;
+    // Update UI
+    const immBtn = document.getElementById('mode-immediate-btn');
+    const subBtn = document.getElementById('mode-submit-btn');
+    
+    if (mode === 'immediate') {
+        immBtn.classList.add('bg-white', 'shadow-sm', 'text-primary');
+        immBtn.classList.remove('text-slate-500', 'hover:text-slate-700');
+        subBtn.classList.remove('bg-white', 'shadow-sm', 'text-primary');
+        subBtn.classList.add('text-slate-500', 'hover:text-slate-700');
+    } else {
+        subBtn.classList.add('bg-white', 'shadow-sm', 'text-primary');
+        subBtn.classList.remove('text-slate-500', 'hover:text-slate-700');
+        immBtn.classList.remove('bg-white', 'shadow-sm', 'text-primary');
+        immBtn.classList.add('text-slate-500', 'hover:text-slate-700');
+    }
+}
+
+function startQuizSession(sessionType = 'special') {
+    currentQuizState.sessionType = sessionType;
+    
+    // Hide Intro/Preview, Show Real Content
+    document.getElementById('quiz-intro-cards').classList.add('hidden');
+    document.getElementById('quiz-preview-section').classList.add('hidden');
+    document.getElementById('quiz-real-content').classList.remove('hidden');
+    document.getElementById('start-quiz-btn').classList.add('hidden'); // Hide start button once started
+    
+    // Mock Data Generation
+    if (sessionType === 'random') {
+        currentQuizState.questions = generateMockQuestions(5, '随机');
+    } else if (sessionType === 'wrong') {
+        currentQuizState.questions = generateMockQuestions(12, '错题');
+    } else if (sessionType === 'new') {
+        currentQuizState.questions = generateMockQuestions(10, '新题');
+    } else {
+        // Special
+        // Check if quiz-title has text, if not use a default
+        const titleEl = document.getElementById('quiz-title');
+        const titleText = titleEl && titleEl.textContent ? titleEl.textContent : '专项练习';
+        currentQuizState.questions = generateMockQuestions(20, titleText);
+    }
+    
+    currentQuizState.currentIndex = 0;
+    currentQuizState.userAnswers = {};
+    currentQuizState.isSubmitted = false;
+    
+    // Default mode logic if not set by UI
+    if (!currentQuizState.mode) currentQuizState.mode = 'immediate';
+    
+    renderQuizInterface();
+}
+
+function generateMockQuestions(count, prefix) {
+    return Array.from({ length: count }, (_, i) => ({
+        id: i + 1,
+        type: i % 3 === 0 ? 'multi' : 'single',
+        title: `${prefix} - 模拟题目 ${i + 1}：关于前端技术的深入探讨与应用？`,
+        options: ['选项 A: 技术原理分析', '选项 B: 实际应用场景', '选项 C: 性能优化方案', '选项 D: 最佳实践指南'],
+        correct: i % 3 === 0 ? [0, 2] : 1,
+        explain: '这是题目的详细解析。包含原理分析、代码示例和注意事项。'
+    }));
+}
+
+function renderQuizInterface() {
+    const container = document.getElementById('quiz-real-content');
+    
+    // Safety check for empty questions
+    if (!currentQuizState.questions || currentQuizState.questions.length === 0) {
+        container.innerHTML = '<div class="p-8 text-center text-slate-400">暂无题目数据</div>';
+        return;
+    }
+    
+    const question = currentQuizState.questions[currentQuizState.currentIndex];
+    const total = currentQuizState.questions.length;
+    
+    // Update Subtitle Progress
+    document.getElementById('quiz-subtitle').innerHTML = `
+        模式: <span class="font-bold text-primary">${currentQuizState.mode === 'immediate' ? '立即反馈' : '全卷提交'}</span> 
+        • 进度: <span class="font-bold text-slate-800">${currentQuizState.currentIndex + 1}/${total}</span>
+    `;
+    
+    let html = `
+        <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm mb-4 animate-fade-in">
+            <div class="flex gap-3 mb-4">
+                <span class="bg-blue-50 text-primary px-2 py-1 rounded text-xs font-bold h-fit whitespace-nowrap">${question.type === 'single' ? '单选' : '多选'}</span>
+                <h3 class="text-lg font-bold text-slate-800 leading-relaxed">${question.title}</h3>
+            </div>
+            
+            <div class="space-y-3">
+                ${question.options.map((opt, idx) => {
+                    const isSelected = isOptionSelected(question.id, idx);
+                    // Show result if: (Immediate Mode AND Selected) OR (Submitted)
+                    const showResult = (currentQuizState.mode === 'immediate' && isSelected) || currentQuizState.isSubmitted;
+                    
+                    let baseClass = "p-4 border rounded-lg flex items-center gap-3 cursor-pointer transition relative overflow-hidden group";
+                    let stateClass = "border-slate-200 hover:bg-slate-50 hover:border-slate-300";
+                    let icon = `<div class="w-5 h-5 rounded-full border border-slate-300 flex items-center justify-center text-[10px] text-transparent group-hover:border-primary group-hover:text-slate-300">${String.fromCharCode(65 + idx)}</div>`;
+                    
+                    if (isSelected) {
+                        stateClass = "bg-blue-50 border-primary";
+                        icon = `<div class="w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center text-xs"><i class="fas fa-check"></i></div>`;
+                    }
+                    
+                    // Result Coloring
+                    if (showResult) {
+                        const isCorrect = Array.isArray(question.correct) ? question.correct.includes(idx) : question.correct === idx;
+                        
+                        // If selected and correct -> Green
+                        // If selected and wrong -> Red
+                        // If not selected but correct (and submitted) -> Green Outline (Optional, usually we just show user answer status)
+                        // Let's stick to: Green if correct option, Red if user selected wrong option.
+                        
+                        if (currentQuizState.isSubmitted) {
+                             // Exam Mode Result
+                             if (isCorrect) {
+                                 stateClass = "bg-green-50 border-green-500";
+                                 icon = `<div class="w-5 h-5 rounded-full bg-green-500 text-white flex items-center justify-center text-xs"><i class="fas fa-check"></i></div>`;
+                             } else if (isSelected && !isCorrect) {
+                                 stateClass = "bg-red-50 border-red-500";
+                                 icon = `<div class="w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center text-xs"><i class="fas fa-times"></i></div>`;
+                             }
+                        } else {
+                            // Immediate Mode Result (Only validate selected)
+                            // If this option is the correct one -> Green
+                            // If this option is selected but wrong -> Red
+                             if (isCorrect) {
+                                 stateClass = "bg-green-50 border-green-500";
+                                 icon = `<div class="w-5 h-5 rounded-full bg-green-500 text-white flex items-center justify-center text-xs"><i class="fas fa-check"></i></div>`;
+                             } else if (isSelected) { // Selected and not correct
+                                 stateClass = "bg-red-50 border-red-500";
+                                 icon = `<div class="w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center text-xs"><i class="fas fa-times"></i></div>`;
+                             }
+                        }
+                    }
+
+                    return `
+                    <div class="${baseClass} ${stateClass}" onclick="${currentQuizState.isSubmitted ? '' : `selectOption(${idx})`}">
+                        ${icon}
+                        <span class="text-sm text-slate-700">${opt}</span>
+                    </div>`;
+                }).join('')}
+            </div>
+        </div>
+
+        <!-- Explanation -->
+        ${(currentQuizState.isSubmitted || (currentQuizState.mode === 'immediate' && currentQuizState.userAnswers[question.id] !== undefined)) ? `
+        <div class="bg-slate-50 border border-slate-100 rounded-xl p-5 animate-fade-in mb-4">
+            <h4 class="font-bold text-slate-800 text-sm mb-2 flex items-center gap-2">
+                <i class="fas fa-lightbulb text-yellow-500"></i> 解析
+            </h4>
+            <p class="text-sm text-slate-600 leading-relaxed">${question.explain}</p>
+        </div>
+        ` : ''}
+        
+        <!-- Footer Navigation -->
+        <div class="flex justify-between items-center pt-4 border-t border-slate-100">
+            <button class="text-slate-500 hover:text-primary disabled:opacity-30 disabled:hover:text-slate-500 px-3 py-1 flex items-center gap-1" 
+                onclick="prevQuestion()" ${currentQuizState.currentIndex === 0 ? 'disabled' : ''}>
+                <i class="fas fa-arrow-left"></i> 上一题
+            </button>
+            
+            <div class="flex gap-1 overflow-x-auto max-w-[200px] no-scrollbar">
+                ${currentQuizState.questions.map((q, i) => {
+                    let dotClass = "bg-slate-200";
+                    if (i === currentQuizState.currentIndex) dotClass = "bg-primary scale-125";
+                    else if (currentQuizState.userAnswers[q.id] !== undefined) dotClass = "bg-blue-300";
+                    return `<div class="w-2 h-2 rounded-full shrink-0 transition ${dotClass}"></div>`;
+                }).join('')}
+            </div>
+
+            <div class="flex gap-2">
+                 ${currentQuizState.isSubmitted ? 
+                 `<button class="bg-white border border-slate-200 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-50 transition" onclick="returnToResult()">
+                    <i class="fas fa-th mr-1"></i>答题卡
+                 </button>` : ''
+                 }
+                 
+                 ${currentQuizState.currentIndex === total - 1 ? 
+                    (currentQuizState.isSubmitted ? 
+                        `<button class="bg-primary text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-600 transition shadow-lg shadow-blue-500/20" onclick="returnToResult()">
+                            <i class="fas fa-flag-checkered mr-1"></i>完成
+                         </button>` : 
+                        `<button class="bg-primary text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-600 transition shadow-lg shadow-blue-500/20" onclick="submitQuiz()">
+                            <i class="fas fa-flag-checkered mr-1"></i>交卷
+                         </button>`
+                    ) :
+                    `<button class="bg-primary text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-600 transition disabled:opacity-50" onclick="nextQuestion()">
+                        下一题 <i class="fas fa-arrow-right ml-1"></i>
+                     </button>`
+                 }
+            </div>
+        </div>
+    `;
+    
+    container.innerHTML = html;
+}
+
+function selectOption(optionIndex) {
+    if (currentQuizState.isSubmitted) return;
+    
+    const question = currentQuizState.questions[currentQuizState.currentIndex];
+    
+    // In Immediate Mode, if already answered (and thus result shown), prevent changing? 
+    // Usually yes, to prevent "guessing until green".
+    if (currentQuizState.mode === 'immediate' && currentQuizState.userAnswers[question.id] !== undefined) {
+        // Allow changing if multi-select? 
+        // For simple logic, let's say once answered/revealed, locked.
+        // But for multi, we need a confirm button usually.
+        // Simplified: Single choice locks immediately. Multi choice waits? 
+        // Let's assume Single choice locks.
+        if (question.type === 'single') return;
+    }
+
+    if (question.type === 'single') {
+        currentQuizState.userAnswers[question.id] = optionIndex;
+        renderQuizInterface();
+    } else {
+        // Multi logic
+        let current = currentQuizState.userAnswers[question.id] || [];
+        if (!Array.isArray(current)) current = [];
+        
+        if (current.includes(optionIndex)) {
+            current = current.filter(i => i !== optionIndex);
+        } else {
+            current.push(optionIndex);
+        }
+        currentQuizState.userAnswers[question.id] = current;
+        renderQuizInterface();
+    }
+}
+
+function isOptionSelected(qId, optIdx) {
+    const ans = currentQuizState.userAnswers[qId];
+    if (ans === undefined) return false;
+    return Array.isArray(ans) ? ans.includes(optIdx) : ans === optIdx;
+}
+
+function nextQuestion() {
+    if (currentQuizState.currentIndex < currentQuizState.questions.length - 1) {
+        currentQuizState.currentIndex++;
+        renderQuizInterface();
+    }
+}
+
+function prevQuestion() {
+    if (currentQuizState.currentIndex > 0) {
+        currentQuizState.currentIndex--;
+        renderQuizInterface();
+    }
+}
+
+function submitQuiz() {
+    if (confirm('确定交卷吗？')) {
+        currentQuizState.isSubmitted = true;
+        
+        // Calculate Score
+        let correctCount = 0;
+        currentQuizState.questions.forEach(q => {
+            const ans = currentQuizState.userAnswers[q.id];
+            let isCorrect = false;
+            if (Array.isArray(q.correct)) {
+                // Multi check: Exact match arrays
+                if (Array.isArray(ans) && ans.length === q.correct.length && ans.every(v => q.correct.includes(v))) {
+                    isCorrect = true;
+                }
+            } else {
+                if (ans === q.correct) isCorrect = true;
+            }
+            if (isCorrect) correctCount++;
+        });
+        
+        const total = currentQuizState.questions.length;
+        const score = Math.round((correctCount / total) * 100);
+        
+        // Show Result View
+        document.getElementById('quiz-active-view').classList.add('hidden');
+        document.getElementById('quiz-result-view').classList.remove('hidden');
+        
+        // Update Data
+        document.getElementById('result-score').textContent = score;
+        document.getElementById('result-total').textContent = total;
+        document.getElementById('result-correct').textContent = correctCount;
+        document.getElementById('result-wrong').textContent = total - correctCount;
+        
+        // Render Answer Sheet
+        renderAnswerSheet();
+    }
+}
+
+function renderAnswerSheet() {
+    const container = document.getElementById('result-answer-sheet');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    currentQuizState.questions.forEach((q, idx) => {
+        const ans = currentQuizState.userAnswers[q.id];
+        let isCorrect = false;
+        
+        if (Array.isArray(q.correct)) {
+            if (Array.isArray(ans) && ans.length === q.correct.length && ans.every(v => q.correct.includes(v))) {
+                isCorrect = true;
+            }
+        } else {
+            if (ans === q.correct) isCorrect = true;
+        }
+        
+        const item = document.createElement('div');
+        // Colors: Correct = Green, Wrong = Red, Unanswered = Gray/Red
+        let colorClass = isCorrect ? 'bg-green-100 text-green-600 border-green-200' : 'bg-red-100 text-red-600 border-red-200';
+        if (ans === undefined) colorClass = 'bg-slate-100 text-slate-400 border-slate-200'; // Or treat as wrong
+        
+        item.className = `h-10 rounded-lg flex items-center justify-center font-bold text-sm border cursor-pointer hover:opacity-80 transition ${colorClass}`;
+        item.textContent = idx + 1;
+        item.onclick = () => reviewQuestion(idx);
+        
+        container.appendChild(item);
+    });
+}
+
+function reviewQuestion(index) {
+    currentQuizState.currentIndex = index;
+    
+    // Switch Views
+    document.getElementById('quiz-result-view').classList.add('hidden');
+    document.getElementById('quiz-active-view').classList.remove('hidden');
+    
+    renderQuizInterface();
+}
+
+function returnToResult() {
+    document.getElementById('quiz-active-view').classList.add('hidden');
+    document.getElementById('quiz-result-view').classList.remove('hidden');
+}
+
+
+function quitQuiz() {
+    if (confirm('确定退出练习吗？进度将不会保存。')) {
+        // Return to dashboard
+        showQuizDashboard();
+    }
+}
+
+// --- Knowledge Management Logic ---
 let currentSelectedNode = null;
+
 
 function searchTree(keyword) {
     const container = document.getElementById('web-manage-tree-root');

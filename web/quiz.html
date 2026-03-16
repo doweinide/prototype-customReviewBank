@@ -110,90 +110,262 @@
         <!-- Content Area -->
         <div id="content-area" class="flex-1 p-4 overflow-hidden h-[calc(100vh-64px)]">
             
-            <!-- Quiz View (Split Layout) -->
-            <div id="view-quiz" class="view-section h-full">
-                <div class="grid grid-cols-12 gap-4 h-full">
-                    
-                    <!-- Left Sidebar: Knowledge Tree Selection -->
-                    <div class="col-span-3 bg-surface rounded-xl shadow-sm border border-slate-200 flex flex-col h-full overflow-hidden">
-                        <div class="p-3 border-b border-slate-100 bg-slate-50 flex flex-col gap-2">
-                            <h3 class="font-bold text-slate-800">选择练习范围</h3>
-                            <input type="text" placeholder="搜索知识点..." class="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-md focus:outline-none focus:border-primary" oninput="searchTree(this.value)">
+            <!-- 1. Quiz Dashboard (Default View) -->
+            <div id="quiz-dashboard" class="view-section h-full flex flex-col gap-6 overflow-y-auto custom-scrollbar p-2">
+                <!-- Top Stats & Charts Row -->
+                <div class="grid grid-cols-12 gap-4 h-64 shrink-0">
+                    <!-- Left: Progress Chart -->
+                    <div class="col-span-8 bg-surface rounded-xl border border-slate-200 shadow-sm p-4 flex flex-col">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="font-bold text-slate-800 text-sm">练习数据总览</h3>
+                            <select class="text-xs border border-slate-200 rounded p-1 text-slate-500">
+                                <option>最近7天</option>
+                                <option>最近30天</option>
+                            </select>
                         </div>
-                        <div class="flex-1 overflow-y-auto p-2" id="web-manage-tree-root"></div>
+                        <div class="flex-1 relative w-full min-h-0">
+                            <canvas id="quizActivityChart"></canvas>
+                        </div>
                     </div>
+                    <!-- Right: Goal & Accuracy -->
+                    <div class="col-span-4 flex flex-col gap-4">
+                        <div class="flex-1 bg-surface rounded-xl border border-slate-200 shadow-sm p-4 flex items-center justify-between">
+                             <div>
+                                 <div class="text-xs text-slate-500 mb-1">今日目标</div>
+                                 <div class="text-2xl font-bold text-slate-800">15<span class="text-sm text-slate-400 font-normal">/30题</span></div>
+                             </div>
+                             <div class="w-12 h-12 relative">
+                                 <canvas id="quizDailyGoalChart"></canvas>
+                             </div>
+                        </div>
+                        <div class="flex-1 bg-surface rounded-xl border border-slate-200 shadow-sm p-4 flex flex-col justify-center">
+                            <div class="flex justify-between items-end mb-2">
+                                <span class="text-xs text-slate-500">综合正确率</span>
+                                <span class="text-xl font-bold text-green-500">85%</span>
+                            </div>
+                            <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                                <div class="bg-green-500 h-full" style="width: 85%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-                    <!-- Right Content: Practice Area -->
-                    <div class="col-span-9 bg-surface rounded-xl shadow-sm border border-slate-200 flex flex-col h-full p-6 relative overflow-hidden">
-                        
-                        <!-- Empty State -->
-                        <div id="quiz-placeholder" class="flex flex-col items-center justify-center h-full text-slate-400">
-                            <i class="fas fa-mouse-pointer text-3xl mb-2 opacity-50"></i>
-                            <p class="text-sm">请在左侧选择一个知识点开始专项练习</p>
+                <!-- Practice Modes (Grid) -->
+                <div>
+                    <h3 class="font-bold text-slate-800 mb-3 text-sm flex items-center gap-2">
+                        <i class="fas fa-th-large text-primary"></i> 练习模式
+                    </h3>
+                    <div class="grid grid-cols-4 gap-4">
+                        <!-- Special Practice -->
+                        <div class="bg-surface p-5 rounded-xl border border-slate-200 shadow-sm hover:border-primary hover:shadow-md transition cursor-pointer group relative overflow-hidden" onclick="showSpecialPractice()">
+                            <div class="absolute right-0 top-0 w-24 h-24 bg-blue-50 rounded-full -mr-8 -mt-8 transition group-hover:bg-blue-100"></div>
+                            <div class="relative z-10">
+                                <div class="w-10 h-10 rounded-lg bg-blue-100 text-primary flex items-center justify-center text-xl mb-3 shadow-sm group-hover:scale-110 transition">
+                                    <i class="fas fa-layer-group"></i>
+                                </div>
+                                <h3 class="font-bold text-slate-800 mb-1">专项练习</h3>
+                                <p class="text-xs text-slate-500">针对特定知识点/章节进行突破</p>
+                            </div>
                         </div>
 
-                        <!-- Active Quiz View -->
-                        <div id="quiz-active-view" class="hidden flex flex-col h-full">
-                            <header class="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
-                                <div>
-                                    <h2 class="text-xl font-bold text-slate-800" id="quiz-title">Vue3 基础核心</h2>
-                                    <div class="text-xs text-slate-500 mt-1">共 20 题 • 上次正确率 85%</div>
+                        <!-- Random Practice -->
+                        <div class="bg-surface p-5 rounded-xl border border-slate-200 shadow-sm hover:border-indigo-500 hover:shadow-md transition cursor-pointer group relative overflow-hidden" onclick="startRandomPractice()">
+                            <div class="absolute right-0 top-0 w-24 h-24 bg-indigo-50 rounded-full -mr-8 -mt-8 transition group-hover:bg-indigo-100"></div>
+                            <div class="relative z-10">
+                                <div class="w-10 h-10 rounded-lg bg-indigo-100 text-indigo-500 flex items-center justify-center text-xl mb-3 shadow-sm group-hover:scale-110 transition">
+                                    <i class="fas fa-random"></i>
                                 </div>
-                                <div class="flex gap-2">
-                                    <button class="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-200 transition">
-                                        <i class="fas fa-history mr-1"></i>练习历史
-                                    </button>
-                                    <button class="bg-primary text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-600 transition shadow-lg shadow-blue-500/20" onclick="startQuizSession()">
-                                        <i class="fas fa-play mr-1"></i>开始练习
-                                    </button>
-                                </div>
-                            </header>
+                                <h3 class="font-bold text-slate-800 mb-1">随机练习</h3>
+                                <p class="text-xs text-slate-500">全库随机抽取 5 道题目</p>
+                            </div>
+                        </div>
 
-                            <!-- Quiz Content (Question List or Active Question) -->
-                            <div class="flex-1 overflow-y-auto custom-scrollbar pr-2">
-                                <!-- Mode Selection -->
-                                <div class="grid grid-cols-3 gap-4 mb-6">
-                                    <div class="border border-primary bg-blue-50 p-4 rounded-xl cursor-pointer relative overflow-hidden">
-                                        <div class="absolute top-2 right-2 text-primary"><i class="fas fa-check-circle"></i></div>
-                                        <h4 class="font-bold text-primary mb-1">顺序练习</h4>
-                                        <p class="text-xs text-slate-600">按顺序逐一攻克题目</p>
-                                    </div>
-                                    <div class="border border-slate-200 hover:border-primary hover:bg-slate-50 p-4 rounded-xl cursor-pointer transition">
-                                        <h4 class="font-bold text-slate-700 mb-1">随机抽题</h4>
-                                        <p class="text-xs text-slate-500">从题库中随机抽取 10 题</p>
-                                    </div>
-                                    <div class="border border-slate-200 hover:border-primary hover:bg-slate-50 p-4 rounded-xl cursor-pointer transition">
-                                        <h4 class="font-bold text-slate-700 mb-1">背题模式</h4>
-                                        <p class="text-xs text-slate-500">直接查看答案和解析</p>
-                                    </div>
+                        <!-- Wrong Questions -->
+                        <div class="bg-surface p-5 rounded-xl border border-slate-200 shadow-sm hover:border-red-500 hover:shadow-md transition cursor-pointer group relative overflow-hidden" onclick="startWrongPractice()">
+                            <div class="absolute right-0 top-0 w-24 h-24 bg-red-50 rounded-full -mr-8 -mt-8 transition group-hover:bg-red-100"></div>
+                            <div class="relative z-10">
+                                <div class="w-10 h-10 rounded-lg bg-red-100 text-red-500 flex items-center justify-center text-xl mb-3 shadow-sm group-hover:scale-110 transition">
+                                    <i class="fas fa-times-circle"></i>
                                 </div>
+                                <h3 class="font-bold text-slate-800 mb-1">错题攻坚</h3>
+                                <p class="text-xs text-slate-500">待复习错题 <span class="font-bold text-red-500">12</span> 道</p>
+                            </div>
+                        </div>
 
-                                <!-- Preview Question List -->
-                                <h3 class="font-bold text-slate-800 mb-3 text-sm">题目预览</h3>
-                                <div class="space-y-3" id="quiz-preview-list">
-                                    <!-- Dynamic Items -->
-                                    <div class="p-4 border border-slate-100 rounded-xl bg-slate-50 flex justify-between items-center">
-                                        <div class="flex gap-3">
-                                            <span class="bg-blue-100 text-primary px-2 py-0.5 rounded text-xs font-bold h-fit">单选</span>
-                                            <div>
-                                                <div class="text-sm font-bold text-slate-700 mb-1">Vue3 中定义响应式数据推荐使用哪个 API？</div>
-                                                <div class="text-xs text-slate-400">难度: 简单 • 错误率: 15%</div>
-                                            </div>
+                        <!-- New Knowledge -->
+                        <div class="bg-surface p-5 rounded-xl border border-slate-200 shadow-sm hover:border-emerald-500 hover:shadow-md transition cursor-pointer group relative overflow-hidden" onclick="startNewKnowledgePractice()">
+                            <div class="absolute right-0 top-0 w-24 h-24 bg-emerald-50 rounded-full -mr-8 -mt-8 transition group-hover:bg-emerald-100"></div>
+                            <div class="relative z-10">
+                                <div class="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-500 flex items-center justify-center text-xl mb-3 shadow-sm group-hover:scale-110 transition">
+                                    <i class="fas fa-leaf"></i>
+                                </div>
+                                <h3 class="font-bold text-slate-800 mb-1">新题速递</h3>
+                                <p class="text-xs text-slate-500">未做过的题目 <span class="font-bold text-emerald-500">68</span> 道</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                 <!-- Recent History List (Optional) -->
+                 <div class="flex-1 min-h-0 flex flex-col">
+                    <h3 class="font-bold text-slate-800 mb-3 text-sm flex items-center gap-2">
+                        <i class="fas fa-history text-slate-400"></i> 最近练习记录
+                    </h3>
+                    <div class="flex-1 bg-surface rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 border-b border-slate-100 text-slate-500 font-medium">
+                                <tr>
+                                    <th class="p-3">练习内容</th>
+                                    <th class="p-3">模式</th>
+                                    <th class="p-3">题数</th>
+                                    <th class="p-3">正确率</th>
+                                    <th class="p-3">时间</th>
+                                    <th class="p-3 text-right">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-slate-700">
+                                <tr class="hover:bg-slate-50 transition">
+                                    <td class="p-3 font-medium">Vue3 基础核心</td>
+                                    <td class="p-3"><span class="bg-blue-50 text-blue-500 px-1.5 py-0.5 rounded">专项</span></td>
+                                    <td class="p-3">10</td>
+                                    <td class="p-3 text-green-500 font-bold">90%</td>
+                                    <td class="p-3 text-slate-400">10分钟前</td>
+                                    <td class="p-3 text-right"><button class="text-primary hover:text-blue-600">查看</button></td>
+                                </tr>
+                                <tr class="hover:bg-slate-50 transition">
+                                    <td class="p-3 font-medium">随机抽查</td>
+                                    <td class="p-3"><span class="bg-indigo-50 text-indigo-500 px-1.5 py-0.5 rounded">随机</span></td>
+                                    <td class="p-3">5</td>
+                                    <td class="p-3 text-orange-500 font-bold">60%</td>
+                                    <td class="p-3 text-slate-400">昨天</td>
+                                    <td class="p-3 text-right"><button class="text-primary hover:text-blue-600">查看</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                 </div>
+            </div>
+
+            <!-- 2. Practice View (Reuse for all modes) - Hidden by default -->
+            <div id="quiz-practice-view" class="view-section hidden h-full flex flex-col">
+                <div class="mb-2 flex items-center gap-2">
+                    <button class="text-xs text-slate-500 hover:text-primary flex items-center gap-1 bg-white border border-slate-200 px-2 py-1 rounded shadow-sm transition" onclick="showQuizDashboard()">
+                        <i class="fas fa-arrow-left"></i> 返回概览
+                    </button>
+                    <span class="text-xs text-slate-300">|</span>
+                    <span class="text-xs font-bold text-slate-700" id="practice-mode-title">专项练习模式</span>
+                </div>
+                <div class="flex-1 min-h-0">
+                    <div class="grid grid-cols-12 gap-4 h-full">
+                        
+                        <!-- Left Sidebar: Knowledge Tree Selection -->
+                        <div id="quiz-sidebar" class="col-span-3 bg-surface rounded-xl shadow-sm border border-slate-200 flex flex-col h-full overflow-hidden">
+                            <div class="p-3 border-b border-slate-100 bg-slate-50 flex flex-col gap-2">
+                                <h3 class="font-bold text-slate-800">选择练习范围</h3>
+                                <input type="text" placeholder="搜索知识点..." class="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-md focus:outline-none focus:border-primary" oninput="searchTree(this.value)">
+                            </div>
+                            <div class="flex-1 overflow-y-auto p-2" id="web-manage-tree-root"></div>
+                        </div>
+
+                        <!-- Right Content: Practice Area -->
+                        <div id="quiz-content-wrapper" class="col-span-9 bg-surface rounded-xl shadow-sm border border-slate-200 flex flex-col h-full p-6 relative overflow-hidden">
+                            
+                            <!-- Empty State -->
+                            <div id="quiz-placeholder" class="flex flex-col items-center justify-center h-full text-slate-400">
+                                <i class="fas fa-mouse-pointer text-3xl mb-2 opacity-50"></i>
+                                <p class="text-sm">请在左侧选择一个知识点开始专项练习</p>
+                            </div>
+
+                            <!-- Active Quiz View -->
+                            <div id="quiz-active-view" class="hidden flex flex-col h-full">
+                                <header class="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
+                                    <div>
+                                        <h2 class="text-xl font-bold text-slate-800" id="quiz-title">Vue3 基础核心</h2>
+                                        <div class="text-xs text-slate-500 mt-1">
+                                            <span id="quiz-subtitle">共 20 题 • 上次正确率 85%</span>
                                         </div>
-                                        <i class="fas fa-chevron-right text-slate-300"></i>
                                     </div>
-                                    <div class="p-4 border border-slate-100 rounded-xl bg-slate-50 flex justify-between items-center">
-                                        <div class="flex gap-3">
-                                            <span class="bg-purple-100 text-purple-600 px-2 py-0.5 rounded text-xs font-bold h-fit">多选</span>
-                                            <div>
-                                                <div class="text-sm font-bold text-slate-700 mb-1">下列哪些是 Vue3 的新特性？</div>
-                                                <div class="text-xs text-slate-400">难度: 中等 • 错误率: 45%</div>
-                                            </div>
+                                    <div class="flex gap-2 items-center">
+                                        <!-- Mode Switcher -->
+                                        <div class="flex bg-slate-100 rounded-lg p-1 mr-2">
+                                            <button class="px-3 py-1 text-xs rounded-md font-medium transition bg-white shadow-sm text-primary" id="mode-immediate-btn" onclick="setQuizMode('immediate')">立即判题</button>
+                                            <button class="px-3 py-1 text-xs rounded-md font-medium text-slate-500 hover:text-slate-700 transition" id="mode-submit-btn" onclick="setQuizMode('submit_all')">整组提交</button>
                                         </div>
-                                        <i class="fas fa-chevron-right text-slate-300"></i>
+
+                                        <button class="bg-primary text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-600 transition shadow-lg shadow-blue-500/20" id="start-quiz-btn" onclick="startQuizSession()">
+                                            <i class="fas fa-play mr-1"></i>开始练习
+                                        </button>
                                     </div>
+                                </header>
+
+                                <!-- Quiz Content (Question List or Active Question) -->
+                                <div id="quiz-question-container" class="flex-1 overflow-y-auto custom-scrollbar pr-2">
+                                    <!-- Mode Selection Cards (Initial View) -->
+                                    <div id="quiz-intro-cards" class="grid grid-cols-3 gap-4 mb-6">
+                                        <div class="border border-primary bg-blue-50 p-4 rounded-xl cursor-pointer relative overflow-hidden" onclick="setQuizMode('immediate'); startQuizSession()">
+                                            <div class="absolute top-2 right-2 text-primary"><i class="fas fa-check-circle"></i></div>
+                                            <h4 class="font-bold text-primary mb-1">顺序练习</h4>
+                                            <p class="text-xs text-slate-600">按顺序逐一攻克题目</p>
+                                        </div>
+                                        <div class="border border-slate-200 hover:border-primary hover:bg-slate-50 p-4 rounded-xl cursor-pointer transition" onclick="setQuizMode('submit_all'); startQuizSession()">
+                                            <h4 class="font-bold text-slate-700 mb-1">模拟考试</h4>
+                                            <p class="text-xs text-slate-500">全卷做完统一提交</p>
+                                        </div>
+                                        <div class="border border-slate-200 hover:border-primary hover:bg-slate-50 p-4 rounded-xl cursor-pointer transition">
+                                            <h4 class="font-bold text-slate-700 mb-1">背题模式</h4>
+                                            <p class="text-xs text-slate-500">直接查看答案和解析</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Preview Question List (Only for Special Practice) -->
+                                    <div id="quiz-preview-section">
+                                        <h3 class="font-bold text-slate-800 mb-3 text-sm">题目预览</h3>
+                                        <div class="space-y-3" id="quiz-preview-list">
+                                            <!-- Dynamic Items -->
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Actual Question Area (Injected by JS) -->
+                                    <div id="quiz-real-content" class="hidden"></div>
                                 </div>
                             </div>
+                            
+                            <!-- Result View -->
+                            <div id="quiz-result-view" class="hidden flex flex-col h-full items-center justify-center animate-fade-in">
+                                <div class="w-24 h-24 rounded-full bg-blue-50 flex items-center justify-center text-primary text-4xl mb-4 shadow-sm">
+                                    <i class="fas fa-trophy"></i>
+                                </div>
+                                <h2 class="text-2xl font-bold text-slate-800 mb-2">练习完成!</h2>
+                                <div class="text-4xl font-bold text-primary mb-6" id="result-score">85</div>
+                                <div class="flex gap-8 mb-8 text-sm text-slate-600">
+                                    <div class="text-center">
+                                        <div class="font-bold text-slate-800 text-lg" id="result-total">20</div>
+                                        <div>总题数</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="font-bold text-green-500 text-lg" id="result-correct">17</div>
+                                        <div>正确</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="font-bold text-red-500 text-lg" id="result-wrong">3</div>
+                                        <div>错误</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Answer Sheet Grid -->
+                                <div class="w-full max-w-md bg-white rounded-xl border border-slate-100 p-4 mb-6">
+                                    <h3 class="text-sm font-bold text-slate-700 mb-3 text-left">答题卡</h3>
+                                    <div class="grid grid-cols-8 gap-2" id="result-answer-sheet">
+                                        <!-- Dynamic Items -->
+                                    </div>
+                                </div>
+
+                                <div class="flex gap-4">
+                                    <button class="bg-white border border-slate-200 text-slate-600 px-6 py-2 rounded-lg font-medium hover:bg-slate-50 transition" onclick="showQuizDashboard()">返回概览</button>
+                                    <button class="bg-primary text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-600 transition shadow-lg shadow-blue-500/20" onclick="restartQuiz()">再来一组</button>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
                 </div>
@@ -202,6 +374,6 @@
         </div>
     </main>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=1"></script>
 </body>
 </html>

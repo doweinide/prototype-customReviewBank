@@ -466,8 +466,7 @@ function saveNote() {
 function openKnowledgeTree(context) {
     currentTreeContext = context;
     renderTree(knowledgeTreeData, document.getElementById('tree-root'), 'select');
-    document.getElementById('tree-modal').classList.remove('hidden');
-    document.getElementById('tree-modal').classList.add('flex');
+    openModal('tree-modal');
 }
 
 function selectNodeForContext(node) {
@@ -475,6 +474,10 @@ function selectNodeForContext(node) {
         document.getElementById('selected-note-node').textContent = node.title;
     } else if (currentTreeContext === 'select-for-question') {
         document.getElementById('selected-node-name').textContent = node.title;
+    } else {
+        // Default action (e.g. from Home): Start Practice
+        alert(`开始 "${node.title}" 的专项练习`);
+        // In a real app, navigate to quiz page or start session
     }
     
     // Close modal
@@ -702,7 +705,7 @@ function navigateTo(page) {
 }
 
 function startRandomQuiz() {
-    alert('正在为您生成个性化随机题目...');
+    navigateTo('quiz.html');
 }
 
 // --- Additional Mobile Logic (Missing Functions) ---
@@ -786,4 +789,171 @@ function continueLastQuiz() {
 
 function startReview() {
     alert('开始今日复习计划...');
+}
+
+// --- Quiz Logic ---
+let currentQuizQuestions = [];
+let currentQuestionIndex = 0;
+let userAnswers = {}; // { questionId: answer }
+let quizMode = 'immediate'; // 'immediate' or 'submit_all'
+
+const mockQuizData = [
+    { 
+        id: 1, 
+        title: "HTML5 中哪个标签用于定义导航链接？", 
+        type: "单选题", 
+        options: ["A. <nav>", "B. <header>", "C. <footer>", "D. <section>"], 
+        correct: "A",
+        explain: "<nav> 标签定义导航链接的部分。"
+    },
+    { 
+        id: 2, 
+        title: "CSS3 中 flex-direction 的默认值是？", 
+        type: "单选题", 
+        options: ["A. column", "B. row", "C. row-reverse", "D. column-reverse"], 
+        correct: "B",
+        explain: "默认值是 row（水平方向）。"
+    },
+    { 
+        id: 3, 
+        title: "ES6 中用于声明常量的关键字是？", 
+        type: "单选题", 
+        options: ["A. var", "B. let", "C. const", "D. final"], 
+        correct: "C",
+        explain: "const 用于声明常量。"
+    }
+];
+
+function initQuizPage() {
+    // Check if we are on quiz page
+    const container = document.getElementById('quiz-container');
+    if (!container) return;
+
+    currentQuizQuestions = mockQuizData; // In real app, load based on params
+    currentQuestionIndex = 0;
+    userAnswers = {};
+    
+    renderQuizQuestion();
+    updateQuizProgress();
+}
+
+function renderQuizQuestion() {
+    const container = document.getElementById('quiz-container');
+    const question = currentQuizQuestions[currentQuestionIndex];
+    
+    if (!question) return;
+    
+    container.innerHTML = `
+        <div class="bg-white rounded-xl p-5 shadow-sm mb-4">
+            <div class="flex justify-between items-start mb-4">
+                <span class="bg-blue-100 text-primary text-xs px-2 py-0.5 rounded font-medium">${question.type}</span>
+            </div>
+            <h3 class="text-base font-bold text-gray-800 mb-6 leading-relaxed">${question.title}</h3>
+            
+            <div class="space-y-3">
+                ${question.options.map((opt, idx) => {
+                    const optKey = opt.charAt(0);
+                    const isSelected = userAnswers[question.id] === optKey;
+                    let optionClass = "p-3 rounded-lg border border-gray-100 flex items-center gap-3 cursor-pointer hover:bg-gray-50 transition";
+                    let iconClass = "w-5 h-5 rounded-full border border-gray-300 flex items-center justify-center text-xs text-gray-400";
+                    
+                    if (isSelected) {
+                        optionClass = "p-3 rounded-lg border border-blue-200 bg-blue-50 flex items-center gap-3 cursor-pointer transition";
+                        iconClass = "w-5 h-5 rounded-full bg-primary border-primary flex items-center justify-center text-xs text-white";
+                    }
+
+                    return `
+                    <div class="${optionClass}" onclick="selectOption(${question.id}, '${optKey}')">
+                        <div class="${iconClass}">
+                            ${isSelected ? '<i class="fas fa-check"></i>' : String.fromCharCode(65 + idx)}
+                        </div>
+                        <div class="text-sm text-gray-600">${opt}</div>
+                    </div>
+                    `;
+                }).join('')}
+            </div>
+        </div>
+    `;
+    
+    // Update buttons
+    const prevBtn = document.getElementById('prev-btn');
+    const actionBtn = document.getElementById('action-btn');
+    if (prevBtn) prevBtn.disabled = currentQuestionIndex === 0;
+    if (actionBtn) {
+        const isLast = currentQuestionIndex === currentQuizQuestions.length - 1;
+        actionBtn.textContent = isLast ? '提交试卷' : '下一题';
+    }
+}
+
+function selectOption(qId, option) {
+    userAnswers[qId] = option;
+    renderQuizQuestion();
+}
+
+function prevQuestion() {
+    if (currentQuestionIndex > 0) {
+        currentQuestionIndex--;
+        renderQuizQuestion();
+        updateQuizProgress();
+    }
+}
+
+function handleAction() {
+    const isLast = currentQuestionIndex === currentQuizQuestions.length - 1;
+    if (isLast) {
+        submitQuiz();
+    } else {
+        currentQuestionIndex++;
+        renderQuizQuestion();
+        updateQuizProgress();
+    }
+}
+
+function updateQuizProgress() {
+    const el = document.getElementById('quiz-progress');
+    if (el) el.textContent = `${currentQuestionIndex + 1}/${currentQuizQuestions.length}`;
+}
+
+function submitQuiz() {
+    let correctCount = 0;
+    
+    currentQuizQuestions.forEach(q => {
+        if (userAnswers[q.id] === q.correct) {
+            correctCount++;
+        }
+    });
+    
+    const score = Math.round((correctCount / currentQuizQuestions.length) * 100);
+    
+    document.getElementById('quiz-container').classList.add('hidden');
+    document.getElementById('quiz-action-bar').classList.add('hidden');
+    document.getElementById('quiz-overview').classList.remove('hidden');
+    
+    document.getElementById('score-display').textContent = score;
+    document.getElementById('total-count').textContent = currentQuizQuestions.length;
+    document.getElementById('correct-count').textContent = correctCount;
+    
+    // Render Grid
+    const grid = document.getElementById('overview-grid');
+    grid.innerHTML = currentQuizQuestions.map((q, idx) => {
+        const isCorrect = userAnswers[q.id] === q.correct;
+        const bgClass = isCorrect ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600';
+        return `<div class="w-10 h-10 rounded-lg ${bgClass} flex items-center justify-center font-bold text-sm">${idx + 1}</div>`;
+    }).join('');
+}
+
+function restartQuiz() {
+    userAnswers = {};
+    currentQuestionIndex = 0;
+    document.getElementById('quiz-overview').classList.add('hidden');
+    document.getElementById('quiz-container').classList.remove('hidden');
+    document.getElementById('quiz-action-bar').classList.remove('hidden');
+    renderQuizQuestion();
+    updateQuizProgress();
+}
+
+function changeQuizMode(mode) {
+    quizMode = mode;
+    // Reload or adjust logic if needed
+    alert('模式已切换为: ' + (mode === 'immediate' ? '立即判题' : '整组提交'));
 }

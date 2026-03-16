@@ -274,7 +274,7 @@
                                             <div class="bg-red-400 h-full w-1/3"></div>
                                         </div>
                                         <div class="flex justify-end mt-1.5">
-                                            <button class="text-[10px] bg-white border border-slate-200 px-2 py-0.5 rounded text-slate-600 hover:text-primary hover:border-primary transition">立即专项练习</button>
+                                            <button class="text-[10px] bg-white border border-slate-200 px-2 py-0.5 rounded text-slate-600 hover:text-primary hover:border-primary transition" onclick="window.location.href='quiz.html?mode=special'">立即专项练习</button>
                                         </div>
                                     </div>
                                     <div class="p-2.5 border border-slate-100 rounded-lg hover:shadow-sm transition cursor-pointer group">
@@ -286,7 +286,7 @@
                                             <div class="bg-orange-400 h-full w-3/5"></div>
                                         </div>
                                          <div class="flex justify-end mt-1.5">
-                                            <button class="text-[10px] bg-white border border-slate-200 px-2 py-0.5 rounded text-slate-600 hover:text-primary hover:border-primary transition">立即专项练习</button>
+                                            <button class="text-[10px] bg-white border border-slate-200 px-2 py-0.5 rounded text-slate-600 hover:text-primary hover:border-primary transition" onclick="window.location.href='quiz.html?mode=special'">立即专项练习</button>
                                         </div>
                                     </div>
                                 </div>
@@ -304,15 +304,15 @@
                                 <i class="fas fa-ellipsis-h text-slate-500 text-xs cursor-pointer hover:text-white"></i>
                             </h3>
                             <div class="grid grid-cols-2 gap-2">
-                                <button class="bg-white/10 hover:bg-white/20 transition p-2 rounded-lg flex items-center gap-3 group" onclick="window.location.href='quiz.html'">
+                                <button class="bg-white/10 hover:bg-white/20 transition p-2 rounded-lg flex items-center gap-3 group" onclick="window.location.href='quiz.html?mode=random'">
                                     <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-300 group-hover:text-white group-hover:bg-blue-500 transition"><i class="fas fa-magic"></i></div>
                                     <span class="text-xs font-medium">随机测验</span>
                                 </button>
-                                <button class="bg-white/10 hover:bg-white/20 transition p-2 rounded-lg flex items-center gap-3 group" onclick="window.location.href='quiz.html'">
+                                <button class="bg-white/10 hover:bg-white/20 transition p-2 rounded-lg flex items-center gap-3 group" onclick="window.location.href='quiz.html?mode=special'">
                                     <div class="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-300 group-hover:text-white group-hover:bg-indigo-500 transition"><i class="fas fa-bullseye"></i></div>
                                     <span class="text-xs font-medium">专项练习</span>
                                 </button>
-                                <button class="bg-white/10 hover:bg-white/20 transition p-2 rounded-lg flex items-center gap-3 group" onclick="alert('错题本')">
+                                <button class="bg-white/10 hover:bg-white/20 transition p-2 rounded-lg flex items-center gap-3 group" onclick="window.location.href='quiz.html?mode=wrong'">
                                     <div class="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center text-red-300 group-hover:text-white group-hover:bg-red-500 transition"><i class="fas fa-times"></i></div>
                                     <span class="text-xs font-medium">错题本</span>
                                 </button>
