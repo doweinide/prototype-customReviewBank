@@ -141,6 +141,7 @@ const defaultNotes = [
 let knowledgeTreeData = DataStore.get('knowledgeTree', defaultTreeData);
 let mockNotes = DataStore.get('notes', defaultNotes);
 let currentEditingNoteId = null; // Track currently edited note
+let currentTreeContext = null; // Track context for tree selection (note vs question)
 
 // Initialize based on current page
 document.addEventListener('DOMContentLoaded', () => {
@@ -148,7 +149,84 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Auto-init charts if on Center page
     if (path.includes('center.html') || document.getElementById('quizCurveChart')) {
-        initCharts();
+        const ctxQuiz = document.getElementById('quizCurveChart');
+        if (ctxQuiz) {
+            const ctx2d = ctxQuiz.getContext('2d');
+            // Create a beautiful gradient
+            const gradient = ctx2d.createLinearGradient(0, 0, 0, 200);
+            gradient.addColorStop(0, 'rgba(59, 130, 246, 0.2)'); // Blue-500
+            gradient.addColorStop(1, 'rgba(59, 130, 246, 0)');
+
+            new Chart(ctxQuiz, {
+                type: 'line',
+                data: {
+                    labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+                    datasets: [{
+                        label: '本周做题',
+                        data: [15, 22, 18, 30, 25, 45, 32],
+                        borderColor: '#3b82f6', // Blue-500
+                        backgroundColor: gradient,
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#3b82f6',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointHoverBackgroundColor: '#3b82f6',
+                        pointHoverBorderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                            titleColor: '#1e293b',
+                            bodyColor: '#475569',
+                            borderColor: '#e2e8f0',
+                            borderWidth: 1,
+                            padding: 10,
+                            boxPadding: 4,
+                            callbacks: {
+                                label: (context) => `${context.parsed.y} 道题`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                font: { size: 10, family: "'Inter', sans-serif" },
+                                color: '#94a3b8'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                borderDash: [4, 4],
+                                color: '#f1f5f9',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                font: { size: 10, family: "'Inter', sans-serif" },
+                                color: '#94a3b8',
+                                stepSize: 10
+                            }
+                        }
+                    },
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                }
+            });
+        }
+        
+        loadSettings(); // Load settings when on center page
     }
     
     // Auto-init Note list if on Note page
@@ -163,6 +241,350 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// --- Tree Rendering Logic ---
+function renderTree(data, container, mode = 'manage') {
+    if (!container) return;
+    container.innerHTML = '';
+    
+    const ul = document.createElement('ul');
+    ul.className = 'space-y-2';
+    
+    data.forEach(node => {
+        const li = document.createElement('li');
+        
+        const content = document.createElement('div');
+        content.className = 'flex items-center justify-between p-3 bg-white rounded-lg border border-gray-100 shadow-sm active:bg-gray-50 transition cursor-pointer';
+        
+        const left = document.createElement('div');
+        left.className = 'flex items-center gap-3';
+        
+        // Icon logic: if has children, show toggle icon
+        const iconClass = node.children && node.children.length > 0 
+            ? 'fa-folder text-yellow-400' 
+            : 'fa-file-alt text-gray-400';
+            
+        left.innerHTML = `
+            <i class="fas ${iconClass} text-lg w-5 text-center"></i>
+            <div>
+                <div class="text-sm font-medium text-gray-800">${node.title}</div>
+                ${mode === 'manage' ? `<div class="text-[10px] text-gray-400">${node.children ? node.children.length + ' 子项' : '0 题目'}</div>` : ''}
+            </div>
+        `;
+        
+        content.appendChild(left);
+        
+        if (mode === 'manage') {
+            const actions = document.createElement('div');
+            actions.className = 'flex gap-3 text-gray-400';
+            actions.innerHTML = `
+                <i class="fas fa-plus hover:text-primary p-2" onclick="event.stopPropagation(); addChildNode(${node.id})"></i>
+                <i class="fas fa-trash hover:text-red-500 p-2" onclick="event.stopPropagation(); deleteNode(${node.id})"></i>
+            `;
+            content.appendChild(actions);
+            // Toggle on click for manage mode too
+            content.onclick = (e) => toggleNode(e, node.id);
+        } else if (mode === 'select' || mode === 'normal') {
+            // For select/normal, clicking the content selects it, but we need a way to expand
+            // Let's add an expand icon if it has children
+            if (node.children && node.children.length > 0) {
+                 const expandBtn = document.createElement('div');
+                 expandBtn.innerHTML = `<i class="fas fa-chevron-right text-gray-300 text-xs transition-transform" id="icon-${node.id}"></i>`;
+                 expandBtn.className = 'p-2';
+                 content.appendChild(expandBtn);
+                 content.onclick = (e) => toggleNode(e, node.id);
+            } else {
+                 content.onclick = () => selectNodeForContext(node);
+            }
+        }
+        
+        li.appendChild(content);
+        
+        if (node.children && node.children.length > 0) {
+            const childrenContainer = document.createElement('div');
+            // Added 'hidden' class by default for collapsed state
+            childrenContainer.className = 'pl-4 border-l-2 border-gray-100 ml-4 mt-2 space-y-2 hidden'; 
+            childrenContainer.id = `children-${node.id}`;
+            renderTree(node.children, childrenContainer, mode);
+            li.appendChild(childrenContainer);
+        }
+        
+        ul.appendChild(li);
+    });
+    
+    container.appendChild(ul);
+}
+
+function toggleNode(event, nodeId) {
+    // If it's manage mode or we want expand/collapse
+    event.stopPropagation();
+    const childrenContainer = document.getElementById(`children-${nodeId}`);
+    const icon = document.getElementById(`icon-${nodeId}`);
+    
+    if (childrenContainer) {
+        childrenContainer.classList.toggle('hidden');
+        if (icon) {
+            if (childrenContainer.classList.contains('hidden')) {
+                icon.classList.remove('rotate-90');
+            } else {
+                icon.classList.add('rotate-90');
+            }
+        }
+    }
+}
+
+// --- Note Logic ---
+function renderNoteList() {
+    const container = document.getElementById('note-list-container');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    mockNotes.forEach(note => {
+        const item = document.createElement('div');
+        item.className = 'bg-white p-4 rounded-xl shadow-sm border border-gray-100 active:scale-[0.98] transition transform duration-100';
+        item.onclick = () => loadNote(note.id);
+        
+        item.innerHTML = `
+            <div class="flex justify-between items-start mb-2">
+                <h3 class="font-bold text-gray-800 text-sm line-clamp-1">${note.title}</h3>
+                <span class="text-[10px] text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full">${note.date}</span>
+            </div>
+            <p class="text-xs text-gray-500 line-clamp-2 mb-3 h-8">${note.content}</p>
+            <div class="flex justify-between items-center border-t border-gray-50 pt-2">
+                <span class="text-[10px] text-primary bg-blue-50 px-2 py-0.5 rounded font-medium">${note.tag}</span>
+                <span class="text-[10px] text-gray-400"><i class="fas fa-tasks mr-1"></i>${note.questions ? note.questions.length : 0} 题</span>
+            </div>
+        `;
+        container.appendChild(item);
+    });
+}
+
+function renderNoteTree(data, container) {
+    // For now, reuse the main tree render but simplified or specialized if needed
+    // Assuming simple list for now, or just reuse renderTree with 'select' mode but adapted styles
+    // Since mobile screen is small, maybe just show root nodes or use renderTree logic
+    renderTree(data, container, 'select'); 
+    // Note: The HTML expects toggle behavior, currently we just render it. 
+    // To make it functional, we'd need to handle visibility toggling which is done by toggleNoteView
+}
+
+function toggleNoteView(viewType) {
+    const listContainer = document.getElementById('note-list-container');
+    const treeContainer = document.getElementById('note-tree-container');
+    const toggleList = document.getElementById('view-toggle-list');
+    const toggleTree = document.getElementById('view-toggle-tree');
+    
+    if (viewType === 'list') {
+        listContainer.classList.remove('hidden');
+        treeContainer.classList.add('hidden');
+        toggleList.classList.add('text-primary', 'bg-white', 'shadow-sm');
+        toggleList.classList.remove('text-gray-400');
+        toggleTree.classList.remove('text-primary', 'bg-white', 'shadow-sm');
+        toggleTree.classList.add('text-gray-400');
+    } else {
+        listContainer.classList.add('hidden');
+        treeContainer.classList.remove('hidden');
+        toggleTree.classList.add('text-primary', 'bg-white', 'shadow-sm');
+        toggleTree.classList.remove('text-gray-400');
+        toggleList.classList.remove('text-primary', 'bg-white', 'shadow-sm');
+        toggleList.classList.add('text-gray-400');
+    }
+}
+
+function createNote() {
+    currentEditingNoteId = null;
+    document.getElementById('note-view-title').textContent = '新建笔记';
+    document.getElementById('note-title-input').value = '';
+    document.getElementById('note-content-input').value = '';
+    document.getElementById('selected-note-node').textContent = '选择关联知识点...';
+    document.getElementById('note-related-questions-container').innerHTML = '';
+    
+    document.getElementById('note-edit-view').classList.remove('hidden');
+}
+
+function loadNote(id) {
+    const note = mockNotes.find(n => n.id === id);
+    if (!note) return;
+    
+    currentEditingNoteId = note.id;
+    document.getElementById('note-view-title').textContent = '编辑笔记';
+    document.getElementById('note-title-input').value = note.title;
+    document.getElementById('note-content-input').value = note.content;
+    document.getElementById('selected-note-node').textContent = note.tag || '选择关联知识点...';
+    
+    // Render related questions
+    const qContainer = document.getElementById('note-related-questions-container');
+    qContainer.innerHTML = '';
+    if (note.questions) {
+        note.questions.forEach(q => {
+            const qItem = document.createElement('div');
+            qItem.className = 'p-3 bg-gray-50 rounded-lg border border-gray-100 text-xs text-gray-600 flex justify-between items-center';
+            qItem.innerHTML = `<span>${q.title}</span> <span class="bg-white px-2 py-0.5 rounded text-[10px] border border-gray-200">${q.type}</span>`;
+            qContainer.appendChild(qItem);
+        });
+    }
+
+    document.getElementById('note-edit-view').classList.remove('hidden');
+}
+
+function closeNoteEdit() {
+    document.getElementById('note-edit-view').classList.add('hidden');
+}
+
+function saveNote() {
+    const title = document.getElementById('note-title-input').value;
+    const content = document.getElementById('note-content-input').value;
+    const tag = document.getElementById('selected-note-node').textContent;
+    
+    if (!title) {
+        alert('请输入标题');
+        return;
+    }
+    
+    if (currentEditingNoteId) {
+        const note = mockNotes.find(n => n.id === currentEditingNoteId);
+        note.title = title;
+        note.content = content;
+        note.tag = tag !== '选择关联知识点...' ? tag : '未分类';
+    } else {
+        const newNote = {
+            id: Date.now(),
+            title: title,
+            content: content,
+            date: new Date().toISOString().split('T')[0],
+            tag: tag !== '选择关联知识点...' ? tag : '未分类',
+            questions: []
+        };
+        mockNotes.unshift(newNote);
+    }
+    
+    DataStore.set('notes', mockNotes);
+    renderNoteList();
+    closeNoteEdit();
+}
+
+// --- Knowledge Tree Interaction ---
+function openKnowledgeTree(context) {
+    currentTreeContext = context;
+    renderTree(knowledgeTreeData, document.getElementById('tree-root'), 'select');
+    document.getElementById('tree-modal').classList.remove('hidden');
+    document.getElementById('tree-modal').classList.add('flex');
+}
+
+function selectNodeForContext(node) {
+    if (currentTreeContext === 'select-for-note') {
+        document.getElementById('selected-note-node').textContent = node.title;
+    } else if (currentTreeContext === 'select-for-question') {
+        document.getElementById('selected-node-name').textContent = node.title;
+    }
+    
+    // Close modal
+    document.getElementById('tree-modal').classList.add('hidden');
+    document.getElementById('tree-modal').classList.remove('flex');
+}
+
+function searchTree(keyword) {
+    const container = document.getElementById('tree-root'); // Use tree-root for modal search
+    if (!keyword) {
+        renderTree(knowledgeTreeData, container, 'select');
+        return;
+    }
+    // Simple mock filter - in reality, would filter the data structure
+    renderTree(knowledgeTreeData, container, 'select'); 
+}
+
+function addRootNode() {
+    const title = prompt("请输入根节点名称");
+    if (title) {
+        knowledgeTreeData.push({
+            id: Date.now(),
+            title: title,
+            level: 1,
+            children: []
+        });
+        DataStore.set('knowledgeTree', knowledgeTreeData);
+        renderTree(knowledgeTreeData, document.getElementById('manage-tree-root'), 'manage');
+    }
+}
+
+function addChildNode(parentId) {
+    // Recursive search to find parent
+    function findNode(nodes, id) {
+        for (let node of nodes) {
+            if (node.id === id) return node;
+            if (node.children) {
+                const found = findNode(node.children, id);
+                if (found) return found;
+            }
+        }
+        return null;
+    }
+    
+    const parent = findNode(knowledgeTreeData, parentId);
+    if (parent) {
+        const title = prompt("请输入子节点名称");
+        if (title) {
+            if (!parent.children) parent.children = [];
+            parent.children.push({
+                id: Date.now(),
+                title: title,
+                level: parent.level + 1,
+                children: []
+            });
+            DataStore.set('knowledgeTree', knowledgeTreeData);
+            renderTree(knowledgeTreeData, document.getElementById('manage-tree-root'), 'manage');
+        }
+    }
+}
+
+function deleteNode(id) {
+    if(confirm('确定删除该节点及其子节点吗？')) {
+        // Simple delete logic - filter out
+        function filterNodes(nodes, id) {
+            return nodes.filter(n => {
+                if (n.id === id) return false;
+                if (n.children) {
+                    n.children = filterNodes(n.children, id);
+                }
+                return true;
+            });
+        }
+        knowledgeTreeData = filterNodes(knowledgeTreeData, id);
+        DataStore.set('knowledgeTree', knowledgeTreeData);
+        renderTree(knowledgeTreeData, document.getElementById('manage-tree-root'), 'manage');
+    }
+}
+
+function switchAddTab(tab) {
+    if (tab === 'single') {
+        document.getElementById('add-single-form').classList.remove('hidden');
+        document.getElementById('add-batch-form').classList.add('hidden');
+        document.querySelectorAll('.tab-btn')[0].classList.add('bg-primary', 'text-white');
+        document.querySelectorAll('.tab-btn')[0].classList.remove('text-gray-500', 'hover:bg-gray-50');
+        document.querySelectorAll('.tab-btn')[1].classList.remove('bg-primary', 'text-white');
+        document.querySelectorAll('.tab-btn')[1].classList.add('text-gray-500', 'hover:bg-gray-50');
+    } else {
+        document.getElementById('add-single-form').classList.add('hidden');
+        document.getElementById('add-batch-form').classList.remove('hidden');
+        document.querySelectorAll('.tab-btn')[1].classList.add('bg-primary', 'text-white');
+        document.querySelectorAll('.tab-btn')[1].classList.remove('text-gray-500', 'hover:bg-gray-50');
+        document.querySelectorAll('.tab-btn')[0].classList.remove('bg-primary', 'text-white');
+        document.querySelectorAll('.tab-btn')[0].classList.add('text-gray-500', 'hover:bg-gray-50');
+    }
+}
+
+function importTreeJSON() {
+    alert("点击右上角下载图标可导出。导入功能暂未开放文件选择器。");
+}
+
+function exportTreeJSON() {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(knowledgeTreeData));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "knowledge_tree.json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+}
 
 // Modal Logic
 function openModal(modalId) {
@@ -173,14 +595,14 @@ function openModal(modalId) {
     modal.classList.remove('hidden');
     modal.classList.add('flex');
     
+    // Load settings if opening settings modal
+    if (modalId === 'settings-modal') {
+        loadSettings();
+    }
+    
     // Animate the inner content
-    // We assume the inner content is the first child (the white card)
     const content = modal.firstElementChild;
     if (content) {
-        // Reset transform to trigger slide up if using transform classes
-        // In Tailwind config above, we used 'animate-slide-up' class which runs on mount
-        // But if we re-open, we might need to re-trigger it. 
-        // Simplest way for prototype: ensure translate-y is handled
         content.classList.remove('translate-y-full');
         content.classList.add('translate-y-0');
     }
@@ -203,1229 +625,165 @@ function closeModal(modalId) {
     }, 300);
 }
 
-// Navigation Logic
+// AI Settings Logic (Mobile)
+function saveAISettings() {
+    const provider = document.getElementById('mobile-ai-provider').value;
+    const apiKey = document.getElementById('mobile-ai-key').value;
+    
+    if (provider) DataStore.set('ai_provider', provider);
+    if (apiKey) DataStore.set('ai_api_key', apiKey);
+}
+
+function loadSettings() {
+    const provider = DataStore.get('ai_provider', 'openai');
+    const apiKey = DataStore.get('ai_api_key', '');
+    
+    const mobileProvider = document.getElementById('mobile-ai-provider');
+    const mobileKey = document.getElementById('mobile-ai-key');
+    
+    if (mobileProvider) mobileProvider.value = provider;
+    if (mobileKey) mobileKey.value = apiKey;
+}
+
+function togglePassword(inputId) {
+    const input = document.getElementById(inputId);
+    const icon = input.nextElementSibling;
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+}
+
+// New Feature: AI Connection Test (Mobile)
+function testAIConnection(platform) {
+    // Only handles 'mobile' here, but keeping sig for consistency
+    const btn = document.getElementById('mobile-ai-test-btn');
+    const status = document.getElementById('mobile-ai-status');
+    const key = document.getElementById('mobile-ai-key').value;
+
+    if (!key) {
+        status.innerHTML = '<span class="text-red-500"><i class="fas fa-times-circle"></i> 请输入 API Key</span>';
+        status.classList.remove('hidden');
+        return;
+    }
+
+    // Loading State
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    btn.disabled = true;
+    status.classList.add('hidden');
+
+    // Simulate API Call
+    setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        status.classList.remove('hidden');
+        
+        // Mock Success (randomly fail if key is "fail")
+        if (key === 'fail') {
+            status.innerHTML = '<span class="text-red-500"><i class="fas fa-times-circle"></i> 连接失败</span>';
+        } else {
+            status.innerHTML = '<span class="text-green-500"><i class="fas fa-check-circle"></i> 连接成功</span>';
+            // Save if successful
+            saveAISettings();
+        }
+    }, 1500);
+}
+
+// Navigation Helper
 function navigateTo(page) {
     window.location.href = page;
 }
 
-// --- Note Logic ---
-function toggleNoteView(mode) {
-    const treeContainer = document.getElementById('note-tree-container');
-    const listContainer = document.getElementById('note-list-container');
-    const toggleTree = document.getElementById('view-toggle-tree');
-    const toggleList = document.getElementById('view-toggle-list');
-
-    if (mode === 'tree') {
-        treeContainer.classList.remove('hidden');
-        listContainer.classList.add('hidden');
-        
-        toggleTree.classList.add('text-primary', 'bg-white', 'shadow-sm');
-        toggleTree.classList.remove('text-gray-400', 'hover:text-primary');
-        
-        toggleList.classList.remove('text-primary', 'bg-white', 'shadow-sm');
-        toggleList.classList.add('text-gray-400', 'hover:text-primary');
-    } else {
-        treeContainer.classList.add('hidden');
-        listContainer.classList.remove('hidden');
-        
-        toggleList.classList.add('text-primary', 'bg-white', 'shadow-sm');
-        toggleList.classList.remove('text-gray-400', 'hover:text-primary');
-        
-        toggleTree.classList.remove('text-primary', 'bg-white', 'shadow-sm');
-        toggleTree.classList.add('text-gray-400', 'hover:text-primary');
-    }
+function startRandomQuiz() {
+    alert('正在为您生成个性化随机题目...');
 }
 
-function renderNoteTree(data, container) {
-    if (!data || !container) return;
-    container.innerHTML = '';
-    
-    data.forEach(node => {
-        const nodeEl = document.createElement('div');
-        nodeEl.className = 'ml-3 py-1';
-        
-        // Find notes for this node
-        const nodeNotes = mockNotes.filter(n => n.tag === node.title); // Using tag match for prototype
-        const hasNotes = nodeNotes.length > 0;
-        const hasChildren = node.children && node.children.length > 0;
-        
-        // Determine icon
-        let iconClass = 'fas fa-circle';
-        let iconStyle = 'font-size: 6px;';
-        let iconColor = 'text-gray-300';
-        
-        if (hasChildren || hasNotes) {
-            iconClass = 'fas fa-caret-right';
-            iconStyle = '';
-            iconColor = 'text-gray-400';
-        }
-
-        const toggleIcon = `<i class="${iconClass} ${iconColor} mr-2 w-4 text-center transition-transform duration-200 node-icon" style="${iconStyle}"></i>`;
-        
-        nodeEl.innerHTML = `
-            <div class="flex items-center p-2 rounded cursor-pointer hover:bg-gray-50 transition node-content" onclick="toggleNode(this)">
-                ${toggleIcon}
-                <span class="text-sm text-gray-700 font-medium">${node.title}</span>
-                ${hasNotes ? `<span class="ml-2 text-xs text-primary bg-blue-50 px-1.5 rounded">${nodeNotes.length}</span>` : ''}
-            </div>
-            <div class="pl-4 border-l border-gray-100 hidden children-container">
-                <!-- Notes attached directly to this node -->
-                ${nodeNotes.map(note => `
-                    <div class="flex items-center justify-between p-2 mb-1 bg-yellow-50 rounded-lg cursor-pointer hover:bg-yellow-100 transition ml-3 border border-yellow-100" onclick="event.stopPropagation(); openNoteQuestions(${note.id})">
-                        <div class="flex items-center overflow-hidden">
-                            <i class="fas fa-file-alt text-yellow-500 mr-2 text-xs"></i>
-                            <span class="text-sm text-gray-700 truncate">${note.title}</span>
-                        </div>
-                        <i class="fas fa-chevron-right text-xs text-gray-300"></i>
-                    </div>
-                `).join('')}
-            </div>
-        `;
-        
-        container.appendChild(nodeEl);
-        
-        // Render children nodes recursively
-        if (hasChildren) {
-            const childrenContainer = nodeEl.querySelector('.children-container');
-            renderNoteTree(node.children, childrenContainer);
-        }
-    });
-}
-
-function openNoteQuestions(noteId) {
-    const note = mockNotes.find(n => n.id === noteId);
-    if (!note) return;
-    
-    document.getElementById('note-questions-view').classList.remove('translate-x-full');
-    const container = document.getElementById('note-questions-list');
-    
-    // Mock Questions for Note
-    const questions = [
-        { id: 101, title: "Vue3 的响应式基础 API 是什么？", type: "单选题" },
-        { id: 102, title: "ref 和 reactive 的区别？", type: "简答题" }
-    ];
-    
-    container.innerHTML = `
-        <div class="mb-4">
-            <h2 class="text-base font-bold text-gray-800">${note.title}</h2>
-            <p class="text-xs text-gray-500 mt-1">关联习题: ${questions.length}</p>
-        </div>
-    `;
-    
-    questions.forEach(q => {
-        container.innerHTML += `
-            <div class="bg-white p-4 rounded-xl shadow-sm mb-3 border border-gray-100">
-                <div class="flex justify-between items-start mb-2">
-                    <span class="bg-blue-50 text-primary text-[10px] px-1.5 py-0.5 rounded">${q.type}</span>
-                    <div class="flex gap-3 text-gray-400">
-                        <i class="fas fa-edit cursor-pointer hover:text-blue-500"></i>
-                        <i class="fas fa-trash cursor-pointer hover:text-red-500"></i>
-                    </div>
-                </div>
-                <p class="text-sm text-gray-700 font-medium">${q.title}</p>
-            </div>
-        `;
-    });
-}
+// --- Additional Mobile Logic (Missing Functions) ---
 
 function closeNoteQuestions() {
     document.getElementById('note-questions-view').classList.add('translate-x-full');
-}
-
-function renderNoteRelatedQuestions(noteId) {
-    const container = document.getElementById('note-related-questions-container');
-    if (!container) return;
-    
-    const note = mockNotes.find(n => n.id === noteId);
-    if (!note || !note.questions || note.questions.length === 0) {
-        container.innerHTML = '<div class="text-center text-gray-400 text-xs py-4">暂无关联题目</div>';
-        return;
-    }
-    
-    container.innerHTML = '';
-    note.questions.forEach((q, index) => {
-        const item = document.createElement('div');
-        item.className = 'bg-gray-50 p-3 rounded-lg border border-gray-100 flex justify-between items-start group';
-        item.innerHTML = `
-            <div class="flex-1">
-                <div class="flex items-center gap-2 mb-1">
-                    <span class="bg-blue-100 text-primary text-[10px] px-1.5 rounded">${q.type || '未知'}</span>
-                    <span class="text-sm text-gray-800 font-medium line-clamp-2">${q.title}</span>
-                </div>
-                ${q.options ? `<div class="text-xs text-gray-500 pl-1 mt-1">${q.options.join(' | ')}</div>` : ''}
-            </div>
-            <div class="flex gap-2 ml-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                <button class="text-gray-400 hover:text-primary p-1" onclick="editNoteQuestion(${noteId}, ${index})" title="编辑"><i class="fas fa-edit"></i></button>
-                <button class="text-gray-400 hover:text-red-500 p-1" onclick="deleteNoteQuestion(${noteId}, ${index})" title="删除"><i class="fas fa-trash"></i></button>
-            </div>
-        `;
-        container.appendChild(item);
-    });
-}
-
-function saveNote(silent = false) {
-    const title = document.getElementById('note-title-input').value;
-    const content = document.getElementById('note-content-input').value;
-    const tag = document.getElementById('selected-note-node').textContent;
-    const finalTag = tag === '选择关联知识点...' ? '未分类' : tag;
-    
-    if (!title && !content && !silent) {
-        alert('笔记内容不能为空');
-        return false;
-    }
-    
-    if (!currentEditingNoteId) {
-        // Create new
-        const newNote = {
-            id: Date.now(),
-            title: title || "未命名笔记",
-            date: new Date().toISOString().split('T')[0],
-            count: 0,
-            tag: finalTag,
-            content: content,
-            questions: []
-        };
-        mockNotes.unshift(newNote);
-        currentEditingNoteId = newNote.id;
-    } else {
-        // Update existing
-        const note = mockNotes.find(n => n.id === currentEditingNoteId);
-        if (note) {
-            note.title = title || "未命名笔记";
-            note.content = content;
-            note.tag = finalTag;
-        }
-    }
-    
-    DataStore.set('notes', mockNotes);
-    renderNoteList();
-    renderNoteRelatedQuestions(currentEditingNoteId);
-    
-    if (!silent) {
-        // Simple toast simulation
-        const btn = document.querySelector('#note-edit-view header span[onclick="saveNote()"]');
-        const originalText = btn.textContent;
-        btn.textContent = '已保存';
-        btn.classList.add('text-green-500');
-        setTimeout(() => {
-            btn.textContent = originalText;
-            btn.classList.remove('text-green-500');
-        }, 1500);
-    }
-    return true;
+    setTimeout(() => {
+        document.getElementById('note-questions-view').classList.add('hidden');
+    }, 300);
 }
 
 function addQuestionToNoteContext() {
-    // Ensure note is saved first so we have an ID
-    if (!currentEditingNoteId) {
-        if (!saveNote(true)) return; 
-    } else {
-        saveNote(true); // Auto-save current state just in case
-    }
-    
-    // Simple prompt for prototype
-    const title = prompt("请输入题目内容:");
-    if (!title) return;
-    
-    const type = prompt("请输入题目类型 (单选题/多选题/简答题):", "单选题");
-    
-    const note = mockNotes.find(n => n.id === currentEditingNoteId);
-    if (note) {
-        if (!note.questions) note.questions = [];
-        note.questions.push({
-            id: Date.now(),
-            title: title,
-            type: type || "简答题",
-            options: ["A. 选项一", "B. 选项二"] // Mock options
-        });
-        note.count = note.questions.length; // Update count
-        DataStore.set('notes', mockNotes);
-        renderNoteRelatedQuestions(currentEditingNoteId);
-        renderNoteList(); // Refresh list count
-    }
+    alert('正在分析笔记内容生成题目...');
 }
-
-function deleteNoteQuestion(noteId, index) {
-    if (!confirm("确定要删除这道题目吗？")) return;
-    
-    const note = mockNotes.find(n => n.id === noteId);
-    if (note && note.questions) {
-        note.questions.splice(index, 1);
-        note.count = note.questions.length;
-        DataStore.set('notes', mockNotes);
-        renderNoteRelatedQuestions(noteId);
-        renderNoteList();
-    }
-}
-
-function editNoteQuestion(noteId, index) {
-    const note = mockNotes.find(n => n.id === noteId);
-    if (!note || !note.questions[index]) return;
-    
-    const q = note.questions[index];
-    const newTitle = prompt("修改题目内容:", q.title);
-    if (newTitle) {
-        q.title = newTitle;
-        DataStore.set('notes', mockNotes);
-        renderNoteRelatedQuestions(noteId);
-    }
-}
-
-function createNote() {
-    if (window.location.pathname.includes('note.html')) {
-        currentEditingNoteId = null; // Reset
-        document.getElementById('note-edit-view').classList.remove('hidden');
-        document.getElementById('note-view-title').textContent = '新建笔记';
-        document.getElementById('note-title-input').value = '';
-        document.getElementById('selected-note-node').textContent = '选择关联知识点...';
-        document.getElementById('note-content-input').value = '';
-        document.getElementById('note-related-questions-container').innerHTML = '<div class="text-center text-gray-400 text-xs py-4">保存笔记后可添加题目</div>';
-    } else {
-        window.location.href = 'note.html?action=create';
-    }
-}
-
-function renderNoteList() {
-    const container = document.getElementById('note-list-container');
-    if (!container) return;
-    container.innerHTML = '';
-    
-    mockNotes.forEach(note => {
-        const item = document.createElement('div');
-        item.className = 'bg-white rounded-xl p-4 shadow-sm flex justify-between items-center cursor-pointer transition active:bg-gray-50';
-        item.onclick = () => {
-             // Switch to edit view
-            currentEditingNoteId = note.id;
-            document.getElementById('note-edit-view').classList.remove('hidden');
-            
-            document.getElementById('note-view-title').textContent = '编辑笔记';
-            document.getElementById('note-title-input').value = note.title;
-            document.getElementById('selected-note-node').textContent = note.tag;
-            document.getElementById('note-content-input').value = note.content || "这是模拟的笔记内容...\n\n点击右上角生成题目体验 AI 功能。";
-            
-            renderNoteRelatedQuestions(note.id);
-        };
-        
-        item.innerHTML = `
-            <div>
-                <h4 class="text-base font-medium text-gray-800 mb-1">${note.title}</h4>
-                <p class="text-xs text-gray-400"><span class="inline-block bg-gray-100 px-1.5 py-0.5 rounded text-gray-500 mr-1">${note.tag}</span> ${note.date}</p>
-            </div>
-            <div class="text-right">
-                <span class="text-xl font-bold text-primary block">${note.count || (note.questions ? note.questions.length : 0)}</span>
-                <div class="text-[10px] text-gray-400">已生成题目</div>
-            </div>
-        `;
-        container.appendChild(item);
-    });
-}
-
-function closeNoteEdit() {
-    document.getElementById('note-edit-view').classList.add('hidden');
-}
-
-let lastGeneratedQuestions = [];
 
 function generateQuestionsFromNote() {
-    const content = document.getElementById('note-content-input').value;
-    if (!content.trim()) {
-        alert('请先输入笔记内容！');
-        return;
-    }
-    
-    openModal('gen-result-overlay');
+    document.getElementById('gen-result-overlay').classList.remove('hidden');
+    document.getElementById('gen-result-overlay').classList.add('flex');
     const container = document.getElementById('gen-result-container');
-    
-    container.innerHTML = `
-        <div class="flex flex-col items-center justify-center h-48 text-gray-400">
-            <i class="fas fa-spinner text-3xl mb-4 text-primary animate-spin"></i>
-            <p>正在分析笔记内容...</p>
-            <p class="text-xs mt-2">AI 正在提取知识点并生成题目</p>
-        </div>
-    `;
+    container.innerHTML = '<div class="flex items-center justify-center h-40 text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i> AI 正在生成...</div>';
     
     setTimeout(() => {
-        container.innerHTML = '';
-        // Store globally for saving later
-        lastGeneratedQuestions = [
-            { id: Date.now(), title: "根据笔记内容，Vue3 中使用 Proxy 替代了 Vue2 中的什么机制？", type: "单选题", options: ["A. Object.defineProperty", "B. Observer", "C. Watcher"] },
-            { id: Date.now() + 1, title: "Ref 函数主要用于处理什么类型的数据？", type: "单选题", options: ["A. 基本数据类型", "B. 引用数据类型", "C. 所有类型"] }
-        ];
-        
-        lastGeneratedQuestions.forEach((item, index) => {
-            const card = document.createElement('div');
-            card.className = 'bg-gray-50 border border-gray-100 rounded-lg p-3 mb-3';
-            card.innerHTML = `
-                <div class="font-bold mb-2 text-sm text-gray-800">${index + 1}. ${item.title}</div>
-                <div class="text-xs text-gray-600 pl-2 space-y-1">
-                    ${item.options.map(opt => `<div>${opt}</div>`).join('')}
+        container.innerHTML = `
+            <div class="space-y-3">
+                <div class="p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                    <div class="font-bold text-sm text-gray-800 mb-1">Q1: Vue3 响应式原理使用了什么 API？</div>
+                    <div class="text-xs text-gray-600">A. Object.defineProperty <br> B. Proxy (正确)</div>
                 </div>
-            `;
-            container.appendChild(card);
-        });
-        
-        const summary = document.createElement('div');
-        summary.className = 'text-center text-gray-500 text-xs mt-4';
-        summary.innerHTML = `<i class="fas fa-check-circle text-green-500 mr-1"></i> 成功生成 ${lastGeneratedQuestions.length} 道题目`;
-        container.appendChild(summary);
-        
-    }, 2000);
+                 <div class="p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                    <div class="font-bold text-sm text-gray-800 mb-1">Q2: Proxy 相比 defineProperty 的优势？</div>
+                    <div class="text-xs text-gray-600">A. 兼容性更好 <br> B. 可监听数组变化 (正确)</div>
+                </div>
+            </div>
+        `;
+    }, 1500);
 }
 
 function saveGeneratedQuestions() {
-    if (!lastGeneratedQuestions || lastGeneratedQuestions.length === 0) return;
-    
-    // If creating new note, save it first
-    if (!currentEditingNoteId) {
-        const title = document.getElementById('note-title-input').value || "未命名笔记";
-        const content = document.getElementById('note-content-input').value;
-        const tag = document.getElementById('selected-note-node').textContent;
-        const finalTag = tag === '选择关联知识点...' ? '未分类' : tag;
-        
-        const newNote = {
-            id: Date.now(),
-            title: title,
-            date: new Date().toISOString().split('T')[0],
-            count: 0,
-            tag: finalTag,
-            content: content,
-            questions: []
-        };
-        mockNotes.unshift(newNote);
-        currentEditingNoteId = newNote.id;
-    }
-    
-    const note = mockNotes.find(n => n.id === currentEditingNoteId);
-    if (note) {
-        if (!note.questions) note.questions = [];
-        note.questions.push(...lastGeneratedQuestions);
-        note.count = note.questions.length;
-        DataStore.set('notes', mockNotes);
-        
-        renderNoteRelatedQuestions(note.id);
-        renderNoteList();
-        
-        alert(`已保存 ${lastGeneratedQuestions.length} 道题目到笔记！`);
-        closeModal('gen-result-overlay');
-    }
+    alert('题目已保存到题库！');
+    closeModal('gen-result-overlay');
 }
 
-// --- Tree & Question Logic ---
-function openKnowledgeTree(mode = 'normal') {
-    const container = document.getElementById(mode === 'manage' ? 'manage-tree-root' : 'tree-root');
-    const searchInput = document.getElementById('tree-search-input');
-    if (searchInput) searchInput.value = '';
-    
-    renderTree(knowledgeTreeData, container, mode);
-    
-    if (mode === 'normal' || mode === 'select-for-question' || mode === 'select-for-note') {
-        openModal('tree-modal');
-    }
-}
-
-function searchTree(keyword) {
-    const container = document.getElementById('tree-root');
-    if (!keyword) {
-        renderTree(knowledgeTreeData, container, 'select'); 
-        return;
-    }
-    
-    const matches = [];
-    function traverse(nodes) {
-        nodes.forEach(node => {
-            if (node.title.toLowerCase().includes(keyword.toLowerCase())) {
-                matches.push(node);
-            }
-            if (node.children) {
-                traverse(node.children);
-            }
-        });
-    }
-    traverse(knowledgeTreeData);
-    
-    container.innerHTML = '';
-    if (matches.length === 0) {
-        container.innerHTML = '<div class="p-3 text-gray-400 text-center text-sm">无搜索结果</div>';
-        return;
-    }
-    
-    matches.forEach(node => {
-         const nodeEl = document.createElement('div');
-         nodeEl.className = 'ml-0 py-2 border-b border-gray-50 last:border-0';
-         
-         const clickHandler = `selectNodeForQuestion(${node.id}, '${node.title}', this)`;
-         
-         nodeEl.innerHTML = `
-            <div class="flex items-center p-2 rounded cursor-pointer hover:bg-gray-50" onclick="${clickHandler}">
-                <i class="fas fa-search mr-2 text-gray-300 text-xs"></i>
-                <span class="text-sm text-gray-700">${node.title}</span>
-            </div>
-        `;
-        container.appendChild(nodeEl);
-    });
-}
-
-function renderTree(data, container, mode = 'normal') {
-    if (!data || !container) return;
-    container.innerHTML = '';
-    
-    data.forEach(node => {
-        const nodeEl = document.createElement('div');
-        nodeEl.className = 'ml-3 py-1';
-        
-        const hasChildren = node.children && node.children.length > 0;
-        let iconClass = 'fas fa-circle';
-        let iconStyle = 'font-size: 6px;';
-        let iconColor = 'text-gray-300';
-        
-        if (hasChildren) {
-            iconClass = 'fas fa-caret-right';
-            iconStyle = '';
-            iconColor = 'text-gray-400';
-        }
-
-        const toggleIcon = `<i class="${iconClass} ${iconColor} mr-2 w-4 text-center transition-transform duration-200 node-icon" style="${iconStyle}"></i>`;
-        
-        let actionBtn = '';
-        let clickHandler = `toggleNode(this)`;
-
-        if (mode === 'normal') {
-            const countInfo = (node.total !== undefined) 
-                ? `<span class="text-[10px] text-gray-400 mr-2 shrink-0">${node.practice || 0}/${node.total}</span>` 
-                : '';
-            
-            if (node.level === 2) {
-                actionBtn = `<div class="ml-auto flex items-center">${countInfo}<button class="bg-primary text-white text-[10px] px-2 py-0.5 rounded shadow-sm active:bg-blue-600 shrink-0" onclick="event.stopPropagation(); startQuiz('level2', ${node.id}, '${node.title}')">做题</button></div>`;
-            } else if (node.level === 3) {
-                actionBtn = `<div class="ml-auto flex items-center">${countInfo}<button class="bg-primary text-white text-[10px] px-2 py-0.5 rounded shadow-sm active:bg-blue-600 shrink-0" onclick="event.stopPropagation(); startQuiz('level3', ${node.id}, '${node.title}')">做题</button></div>`;
-            } else {
-                 // For level 1 or others without button, just show count if exists
-                 if (countInfo) {
-                     actionBtn = `<div class="ml-auto">${countInfo}</div>`;
-                 }
-            }
-        } else if (mode === 'manage') {
-            actionBtn = `
-                <div class="ml-auto flex gap-2">
-                    <button class="w-6 h-6 rounded flex items-center justify-center bg-green-500 text-white text-xs active:scale-95 transition" title="添加子节点" onclick="event.stopPropagation(); addNode(${node.id})"><i class="fas fa-folder-plus"></i></button>
-                    <button class="w-6 h-6 rounded flex items-center justify-center bg-blue-500 text-white text-xs active:scale-95 transition" title="添加题目" onclick="event.stopPropagation(); addQuestionToNode(${node.id}, '${node.title}')"><i class="fas fa-file-circle-plus"></i></button>
-                    <button class="w-6 h-6 rounded flex items-center justify-center bg-orange-400 text-white text-xs active:scale-95 transition" title="编辑节点" onclick="event.stopPropagation(); editNode(${node.id})"><i class="fas fa-edit"></i></button>
-                </div>`;
-        } else if (mode === 'select' || mode === 'select-for-question') {
-             clickHandler = `selectNodeForQuestion(${node.id}, '${node.title}', this)`;
-        } else if (mode === 'select-for-note') {
-             clickHandler = `selectNodeForNote(${node.id}, '${node.title}', this)`;
-        }
-
-        nodeEl.innerHTML = `
-            <div class="flex items-center p-2 rounded cursor-pointer hover:bg-gray-50 transition node-content" onclick="${clickHandler}">
-                ${toggleIcon}
-                <span class="text-sm text-gray-700 font-medium">${node.title}</span>
-                ${actionBtn}
-            </div>
-            ${hasChildren ? '<div class="pl-4 border-l border-gray-100 hidden children-container"></div>' : ''}
-        `;
-        
-        container.appendChild(nodeEl);
-        
-        if (hasChildren) {
-            const childrenContainer = nodeEl.querySelector('.children-container');
-            renderTree(node.children, childrenContainer, mode);
-        }
-    });
-}
-
-function selectNodeForNote(id, title, element) {
-    document.querySelectorAll('.node-content').forEach(el => el.classList.remove('bg-blue-50', 'text-primary'));
-    element.classList.add('bg-blue-50', 'text-primary');
-    document.getElementById('selected-note-node').textContent = title;
-    setTimeout(() => { closeModal('tree-modal'); }, 300);
-}
-
-function selectNodeForQuestion(id, title, element) {
-    document.querySelectorAll('.node-content').forEach(el => el.classList.remove('bg-blue-50', 'text-primary'));
-    element.classList.add('bg-blue-50', 'text-primary');
-    document.getElementById('selected-node-name').textContent = title;
-    document.getElementById('selected-node-name').dataset.id = id;
-    setTimeout(() => { closeModal('tree-modal'); }, 300);
-}
-
-function toggleNode(element) {
-    const childrenContainer = element.nextElementSibling;
-    const icon = element.querySelector('.node-icon');
-    
-    if (childrenContainer && childrenContainer.classList.contains('children-container')) {
-        const isHidden = childrenContainer.classList.contains('hidden');
-        if (isHidden) {
-            childrenContainer.classList.remove('hidden');
-            icon.classList.remove('fa-caret-right');
-            icon.classList.add('fa-caret-down');
-        } else {
-            childrenContainer.classList.add('hidden');
-            icon.classList.remove('fa-caret-down');
-            icon.classList.add('fa-caret-right');
-        }
-    }
-}
-
-function startRandomQuiz() {
-    window.location.href = 'quiz.html?mode=random';
-}
-
-function startQuiz(level, id, title) {
-    window.location.href = `quiz.html?mode=tree&id=${id}&title=${encodeURIComponent(title)}`;
-}
-
-function startReview() {
-    window.location.href = 'quiz.html?mode=review';
-}
-
-function switchAddTab(tab) {
-    const tabs = document.querySelectorAll('.tab-btn');
-    const contents = document.querySelectorAll('.add-tab-content');
-    
-    // Reset classes
-    tabs.forEach(t => {
-        t.classList.remove('bg-primary', 'text-white', 'font-medium');
-        t.classList.add('text-gray-500', 'hover:bg-gray-50');
-    });
-    
-    contents.forEach(c => c.classList.add('hidden'));
-    
-    // Activate selected
-    if (tab === 'single') {
-        tabs[0].classList.remove('text-gray-500', 'hover:bg-gray-50');
-        tabs[0].classList.add('bg-primary', 'text-white', 'font-medium');
-        document.getElementById('add-single-form').classList.remove('hidden');
-    } else {
-        tabs[1].classList.remove('text-gray-500', 'hover:bg-gray-50');
-        tabs[1].classList.add('bg-primary', 'text-white', 'font-medium');
-        document.getElementById('add-batch-form').classList.remove('hidden');
-    }
+function saveQuestion() {
+    alert('题目保存成功！');
+    // Logic to save question to tree node would go here
 }
 
 function toggleOptionExplain(icon) {
-    const wrapper = icon.closest('.option-wrapper');
-    const explainInput = wrapper.querySelector('.option-explain');
-    
-    if (explainInput.classList.contains('hidden')) {
-        explainInput.classList.remove('hidden');
-        explainInput.focus();
-    } else {
-        explainInput.classList.add('hidden');
-    }
+    const input = icon.parentElement.nextElementSibling;
+    input.classList.toggle('hidden');
 }
 
 function addOptionInput() {
     const container = document.getElementById('options-container');
-    const wrapper = document.createElement('div');
-    wrapper.className = 'option-wrapper';
-    wrapper.innerHTML = `
+    const div = document.createElement('div');
+    div.className = 'option-wrapper';
+    div.innerHTML = `
         <div class="flex items-center gap-2 mb-2">
             <input type="radio" name="correct-opt" title="设为正确答案" class="text-primary focus:ring-primary">
-            <input type="text" placeholder="选项" class="flex-1 p-2 border border-gray-200 rounded text-sm focus:outline-none focus:border-primary">
+            <input type="text" placeholder="新选项" class="flex-1 p-2 border border-gray-200 rounded text-sm focus:outline-none focus:border-primary">
             <i class="fas fa-comment-dots text-gray-400 cursor-pointer hover:text-primary p-1" onclick="toggleOptionExplain(this)" title="添加解析"></i>
         </div>
         <input type="text" class="option-explain hidden w-full mt-1 p-2 border border-dashed border-gray-300 rounded text-xs bg-gray-50 focus:outline-none" placeholder="选项解析...">
     `;
-    container.appendChild(wrapper);
+    container.appendChild(div);
 }
 
 function processBatchImport() {
-    const jsonStr = document.getElementById('batch-input').value;
+    const json = document.getElementById('batch-input').value;
     try {
-        const data = JSON.parse(jsonStr);
-        if (Array.isArray(data)) {
-            alert(`成功解析 ${data.length} 道题目！\n(原型演示：已导入数据库)`);
-            window.location.href = 'index.html'; // Back to home
-        } else {
-            alert('JSON 格式错误：必须是数组格式');
-        }
+        const data = JSON.parse(json);
+        alert(`成功解析 ${data.length} 道题目，已导入！`);
     } catch (e) {
-        alert('JSON 解析失败，请检查格式');
+        alert('JSON 格式错误，请检查。');
     }
 }
 
-function saveQuestion() {
-    const nodeName = document.getElementById('selected-node-name').textContent;
-    if (nodeName.includes('...')) {
-        alert('请先选择知识点！');
-        return;
-    }
-    alert(`题目已保存到 "${nodeName}" 节点下！`);
-    window.location.href = 'index.html'; // Back to home
-}
-
-function importTreeJSON() {
-    const json = prompt("请粘贴树结构 JSON:");
-    if (json) {
-        try {
-            const newData = JSON.parse(json);
-            knowledgeTreeData.push(newData);
-            DataStore.set('knowledgeTree', knowledgeTreeData);
-            renderTree(knowledgeTreeData, document.getElementById('manage-tree-root'), 'manage');
-            alert('导入成功！');
-        } catch (e) {
-            alert('JSON 格式错误');
-        }
-    }
-}
-
-function exportTreeJSON() {
-    const json = JSON.stringify(knowledgeTreeData, null, 2);
-    alert("JSON 已生成 (查看控制台可复制)");
-    console.log(json);
-}
-
-function addRootNode() {
-    const name = prompt("输入根节点名称:");
-    if (name) {
-        knowledgeTreeData.push({ id: Date.now(), title: name, level: 1, children: [] });
-        DataStore.set('knowledgeTree', knowledgeTreeData);
-        renderTree(knowledgeTreeData, document.getElementById('manage-tree-root'), 'manage');
-    }
-}
-
-function addNode(parentId) {
-    const name = prompt("输入子节点名称:");
-    if (name) {
-        alert(`在节点 ID ${parentId} 下添加 "${name}" (原型演示)`);
-        // Actual logic: traverse tree, find parent, push to children, save to DataStore
-    }
-}
-
-function editNode(id) {
-    const newName = prompt("修改节点名称:", "新名称");
-    if (newName) {
-        alert(`节点 ID ${id} 名称修改为 "${newName}" (原型演示)`);
-    }
-}
-
-function addQuestionToNode(id, title) {
-     const addSection = document.getElementById('add-question-section');
-     const treeSection = document.getElementById('tree-manage-section');
-     if(addSection && treeSection) {
-         treeSection.classList.add('hidden');
-         addSection.classList.remove('hidden');
-         
-         const nameEl = document.getElementById('selected-node-name');
-         nameEl.textContent = title;
-         nameEl.dataset.id = id;
-     }
-}
-
-function openWrongBook() {
-    alert('打开错题本...');
-}
-
-// --- Home Page Logic ---
 function continueLastQuiz() {
-    // In a real app, this would load the last active session ID
-    // For prototype, we mock resuming a specific topic
-    const lastTopic = {
-        id: 311,
-        title: "Vue3 响应式原理"
-    };
-    
-    if (confirm(`继续上次练习：${lastTopic.title}？`)) {
-        window.location.href = `quiz.html?mode=tree&id=${lastTopic.id}&title=${encodeURIComponent(lastTopic.title)}`;
-    }
+    alert('继续上次的练习...');
 }
 
-// --- Center Page Logic ---
-function openSettings() {
-    openModal('settings-modal');
-}
-
-function openMessages() {
-    openModal('messages-modal');
-}
-
-function openDataBackup() {
-    openModal('backup-modal');
-}
-
-function openHelp() {
-    openModal('help-modal');
-}
-
-function openAbout() {
-    alert("智库 AI - 构建你的第二大脑\nVersion: 1.0.0 Alpha\n\nDesigned for Future Learning.");
-}
-
-function clearAllData() {
-    if (confirm("警告：这将清除所有本地存储的数据（笔记、知识树、做题记录），操作不可撤销！\n\n确定要继续吗？")) {
-        localStorage.clear();
-        alert("数据已清除，页面将刷新。");
-        window.location.reload();
-    }
-}
-
-function markAllRead() {
-    const list = document.getElementById('message-list');
-    const dots = list.querySelectorAll('.bg-red-500');
-    dots.forEach(dot => dot.remove());
-    
-    // Remove badge in menu
-    const badge = document.querySelector('.text-red-500.rounded-full'); // simplified selector
-    if (badge) badge.remove();
-    
-    alert("所有消息已标记为已读");
-}
-
-function exportAllData() {
-    const data = {
-        knowledgeTree: DataStore.get('knowledgeTree', defaultTreeData),
-        notes: DataStore.get('notes', defaultNotes),
-        exportDate: new Date().toISOString()
-    };
-    
-    const json = JSON.stringify(data, null, 2);
-    
-    // Create download
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `zhiku_backup_${new Date().toISOString().slice(0,10)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-}
-
-function importAllData(input) {
-    const file = input.files[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            const data = JSON.parse(e.target.result);
-            if (data.knowledgeTree && data.notes) {
-                if (confirm(`检测到备份文件 (${data.exportDate})\n\n确定要覆盖当前所有数据吗？`)) {
-                    DataStore.set('knowledgeTree', data.knowledgeTree);
-                    DataStore.set('notes', data.notes);
-                    alert("数据恢复成功！页面将刷新。");
-                    window.location.reload();
-                }
-            } else {
-                alert("无效的备份文件格式");
-            }
-        } catch (err) {
-            alert("文件解析失败：" + err.message);
-        }
-    };
-    reader.readAsText(file);
-    // Reset input
-    input.value = '';
-}
-
-// Chart Initialization
-let chartsInitialized = false;
-function initCharts() {
-    if (chartsInitialized) return;
-    
-    const canvas1 = document.getElementById('quizCurveChart');
-    if (canvas1) {
-        const ctx1 = canvas1.getContext('2d');
-        new Chart(ctx1, {
-            type: 'line',
-            data: {
-                labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
-                datasets: [{
-                    label: '做题数',
-                    data: [12, 19, 3, 5, 2, 3, 15],
-                    borderColor: '#1890ff',
-                    tension: 0.4
-                }, {
-                    label: '复习数',
-                    data: [5, 10, 5, 8, 6, 4, 10],
-                    borderColor: '#52c41a',
-                    tension: 0.4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom' } }
-            }
-        });
-    }
-
-    const canvas2 = document.getElementById('newKnowledgeChart');
-    if (canvas2) {
-        const ctx2 = canvas2.getContext('2d');
-        new Chart(ctx2, {
-            type: 'bar',
-            data: {
-                labels: ['1月', '2月', '3月', '4月'],
-                datasets: [{
-                    label: '新增知识点',
-                    data: [20, 35, 40, 15],
-                    backgroundColor: '#722ed1'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom' } }
-            }
-        });
-    }
-    
-    chartsInitialized = true;
-}
-
-// --- Quiz Engine Logic ---
-
-const quizMockData = [
-    {
-        id: 1,
-        title: "在 Vue 3 中，使用哪个函数来定义引用类型的响应式对象？",
-        type: "单选题",
-        options: ["ref()", "reactive()", "computed()", "watch()"],
-        answer: 1, 
-        explanation: "reactive() 主要用于定义对象、数组等引用类型的响应式数据，而 ref() 主要用于定义基本类型，虽然 ref 也可以定义对象（内部调用 reactive）。"
-    },
-    {
-        id: 2,
-        title: "下列哪个生命周期钩子在 Vue 3 Composition API 中不存在？",
-        type: "单选题",
-        options: ["onMounted", "onCreated", "onUpdated", "onUnmounted"],
-        answer: 1,
-        explanation: "Vue 3 Composition API 中没有 onCreated 和 onBeforeCreate，直接在 setup() 函数中执行即可。"
-    },
-    {
-        id: 3,
-        title: "Vue Router 4 中获取当前路由参数的 Hook 是？",
-        type: "单选题",
-        options: ["useRouter", "useRoute", "useParams", "useQuery"],
-        answer: 1,
-        explanation: "useRoute() 用于获取当前路由信息（包括 params, query 等），useRouter() 用于执行路由跳转。"
-    },
-    {
-        id: 4,
-        title: "Pinia 相比 Vuex 的主要改进不包括？",
-        type: "单选题",
-        options: ["去除了 Mutation", "更好的 TypeScript 支持", "不再支持 Options API", "体积更小"],
-        answer: 2,
-        explanation: "Pinia 依然支持 Options API（通过 mapState, mapActions 等），同时也完美支持 Composition API。"
-    },
-    {
-        id: 5,
-        title: "Vite 在开发环境下使用什么方式打包？",
-        type: "单选题",
-        options: ["Webpack", "Rollup", "Esbuild (No-bundle)", "Parcel"],
-        answer: 2,
-        explanation: "Vite 在开发环境下基于浏览器原生 ES Module (No-bundle) 进行开发，生产环境使用 Rollup 打包。"
-    }
-];
-
-let quizState = {
-    questions: [],
-    currentIndex: 0,
-    userAnswers: {}, // { questionIndex: optionIndex }
-    mode: 'immediate', // 'immediate' | 'submit_all'
-    isReview: false,
-    submitted: false // specific for submit_all mode to check if submitted
-};
-
-function initQuizPage() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const title = urlParams.get('title');
-    const mode = urlParams.get('mode'); // 'random', 'tree', 'review'
-    
-    if (title) {
-        document.getElementById('quiz-title').textContent = title;
-    }
-    
-    // Default mock load
-    // In real app, fetch based on IDs or Tree Node
-    quizState.questions = [...quizMockData]; 
-    quizState.currentIndex = 0;
-    quizState.userAnswers = {};
-    quizState.isReview = false;
-    quizState.submitted = false;
-    
-    // Set initial mode from UI select
-    const modeSelect = document.getElementById('quiz-mode-select');
-    if (modeSelect) {
-        quizState.mode = modeSelect.value;
-    }
-
-    renderQuizQuestion();
-}
-
-function changeQuizMode(newMode) {
-    if (Object.keys(quizState.userAnswers).length > 0) {
-        if (!confirm("切换模式将清空当前进度，确定吗？")) {
-            // Revert select
-            document.getElementById('quiz-mode-select').value = quizState.mode;
-            return;
-        }
-    }
-    quizState.mode = newMode;
-    quizState.userAnswers = {};
-    quizState.currentIndex = 0;
-    quizState.submitted = false;
-    quizState.isReview = false;
-    
-    document.getElementById('quiz-container').classList.remove('hidden');
-    document.getElementById('quiz-overview').classList.add('hidden');
-    document.getElementById('quiz-action-bar').classList.remove('hidden');
-    
-    renderQuizQuestion();
-}
-
-function renderQuizQuestion() {
-    const container = document.getElementById('quiz-container');
-    const question = quizState.questions[quizState.currentIndex];
-    const total = quizState.questions.length;
-    
-    // Update Progress
-    document.getElementById('quiz-progress').textContent = `${quizState.currentIndex + 1}/${total}`;
-    
-    // Check if answered
-    const userAnswer = quizState.userAnswers[quizState.currentIndex];
-    const isAnswered = userAnswer !== undefined;
-    const isCorrect = isAnswered && userAnswer === question.answer;
-    
-    // Determine View State
-    // Immediate mode: show result if answered
-    // Submit All mode: show result only if submitted (isReview = true)
-    const showResult = (quizState.mode === 'immediate' && isAnswered) || 
-                       (quizState.mode === 'submit_all' && quizState.submitted);
-
-    let optionsHtml = '';
-    question.options.forEach((opt, idx) => {
-        let bgClass = 'bg-white border-gray-200';
-        let textClass = 'text-gray-800';
-        let icon = '';
-        
-        if (showResult) {
-            if (idx === question.answer) {
-                bgClass = 'bg-green-50 border-green-500 text-green-700';
-                icon = '<i class="fas fa-check float-right mt-1"></i>';
-            } else if (idx === userAnswer) {
-                bgClass = 'bg-red-50 border-red-500 text-red-700';
-                icon = '<i class="fas fa-times float-right mt-1"></i>';
-            }
-        } else if (idx === userAnswer) {
-             bgClass = 'bg-blue-50 border-primary text-primary';
-        }
-        
-        // Disable click if showing result
-        const clickAttr = showResult ? '' : `onclick="selectQuizOption(${idx})"`;
-        const cursorClass = showResult ? 'cursor-default' : 'cursor-pointer active:bg-blue-50';
-
-        optionsHtml += `
-            <div class="option-item border rounded-xl p-4 mb-3 transition ${bgClass} ${cursorClass}" ${clickAttr}>
-                <span class="font-medium mr-2">${String.fromCharCode(65 + idx)}.</span>
-                ${opt}
-                ${icon}
-            </div>
-        `;
-    });
-
-    let explanationHtml = '';
-    if (showResult) {
-        explanationHtml = `
-            <div class="mt-6 p-4 bg-gray-100 rounded-xl animate-fade-in">
-                <div class="flex items-center gap-2 mb-2">
-                    <span class="text-xs font-bold px-2 py-0.5 rounded ${isCorrect ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}">
-                        ${isCorrect ? '回答正确' : '回答错误'}
-                    </span>
-                    <span class="text-xs text-gray-500">正确答案: ${String.fromCharCode(65 + question.answer)}</span>
-                </div>
-                <div class="text-sm text-gray-600 leading-relaxed">
-                    <span class="font-bold text-gray-700">解析：</span>${question.explanation}
-                </div>
-            </div>
-        `;
-    }
-
-    container.innerHTML = `
-        <div class="bg-white rounded-xl p-5 mb-4 shadow-sm min-h-[120px] flex flex-col justify-center">
-            <span class="inline-block px-2 py-0.5 bg-blue-50 text-primary rounded text-xs w-fit mb-2">${question.type}</span>
-            <p class="text-base font-medium leading-relaxed text-gray-800">${question.title}</p>
-        </div>
-        <div class="space-y-1">
-            ${optionsHtml}
-        </div>
-        ${explanationHtml}
-    `;
-    
-    updateActionButtons();
-}
-
-function selectQuizOption(idx) {
-    if (quizState.mode === 'immediate' && quizState.userAnswers[quizState.currentIndex] !== undefined) return; // Already answered
-    
-    quizState.userAnswers[quizState.currentIndex] = idx;
-    renderQuizQuestion();
-}
-
-function prevQuestion() {
-    if (quizState.currentIndex > 0) {
-        quizState.currentIndex--;
-        renderQuizQuestion();
-    }
-}
-
-function handleAction() {
-    const total = quizState.questions.length;
-    const isLast = quizState.currentIndex === total - 1;
-    const isAnswered = quizState.userAnswers[quizState.currentIndex] !== undefined;
-
-    // Review Mode (Post-submission or traversing finished immediate quiz)
-    if (quizState.submitted || (quizState.mode === 'immediate' && Object.keys(quizState.userAnswers).length === total)) {
-        if (isLast) {
-            showQuizOverview();
-        } else {
-            quizState.currentIndex++;
-            renderQuizQuestion();
-        }
-        return;
-    }
-
-    if (quizState.mode === 'immediate') {
-        // Immediate Logic
-        if (!isAnswered) {
-            alert('请先选择一个答案');
-            return;
-        }
-        
-        if (isLast) {
-             // Finish Immediate Quiz
-             quizState.submitted = true; // Mark as done so we enter review mode behavior
-             showQuizOverview();
-        } else {
-            quizState.currentIndex++;
-            renderQuizQuestion();
-        }
-        
-    } else {
-        // Submit All Logic
-        if (isLast) {
-            if (Object.keys(quizState.userAnswers).length < total) {
-                if (!confirm(`还有 ${total - Object.keys(quizState.userAnswers).length} 道题未做，确定提交吗？`)) return;
-            }
-            quizState.submitted = true;
-            showQuizOverview();
-        } else {
-            quizState.currentIndex++;
-            renderQuizQuestion();
-        }
-    }
-}
-
-function updateActionButtons() {
-    const prevBtn = document.getElementById('prev-btn');
-    const actionBtn = document.getElementById('action-btn');
-    
-    prevBtn.disabled = quizState.currentIndex === 0;
-    prevBtn.classList.toggle('opacity-30', quizState.currentIndex === 0);
-    
-    const isLast = quizState.currentIndex === quizState.questions.length - 1;
-    const isReviewing = quizState.submitted || (quizState.mode === 'immediate' && quizState.submitted); // quizState.submitted is enough
-
-    if (isReviewing) {
-        actionBtn.textContent = isLast ? '返回概览' : '下一题';
-        actionBtn.classList.remove('bg-gray-300');
-        actionBtn.classList.add('bg-primary');
-        return;
-    }
-    
-    if (quizState.mode === 'immediate') {
-        const isAnswered = quizState.userAnswers[quizState.currentIndex] !== undefined;
-        
-        if (isAnswered) {
-             actionBtn.textContent = isLast ? '查看结果' : '下一题';
-             actionBtn.classList.remove('bg-gray-300');
-             actionBtn.classList.add('bg-primary');
-        } else {
-             actionBtn.textContent = '请选择';
-             actionBtn.classList.add('bg-gray-300');
-             actionBtn.classList.remove('bg-primary');
-        }
-    } else {
-        // Submit All Mode
-        actionBtn.textContent = isLast ? '提交试卷' : '下一题';
-        actionBtn.classList.remove('bg-gray-300');
-        actionBtn.classList.add('bg-primary');
-    }
-}
-
-function showQuizOverview() {
-    document.getElementById('quiz-container').classList.add('hidden');
-    document.getElementById('quiz-action-bar').classList.add('hidden');
-    document.getElementById('quiz-overview').classList.remove('hidden');
-    document.getElementById('quiz-mode-select').disabled = true; // Disable mode switch in overview
-    
-    // Calculate Score
-    let correct = 0;
-    quizState.questions.forEach((q, idx) => {
-        if (quizState.userAnswers[idx] === q.answer) correct++;
-    });
-    
-    document.getElementById('score-display').textContent = Math.round((correct / quizState.questions.length) * 100);
-    document.getElementById('total-count').textContent = quizState.questions.length;
-    document.getElementById('correct-count').textContent = correct;
-    
-    // Generate Grid
-    const grid = document.getElementById('overview-grid');
-    grid.innerHTML = '';
-    
-    quizState.questions.forEach((q, idx) => {
-        const ua = quizState.userAnswers[idx];
-        let colorClass = 'bg-gray-100 text-gray-400'; // Unanswered
-        
-        if (ua !== undefined) {
-            if (ua === q.answer) {
-                colorClass = 'bg-green-100 text-green-600 border border-green-200';
-            } else {
-                colorClass = 'bg-red-100 text-red-600 border border-red-200';
-            }
-        }
-        
-        const item = document.createElement('div');
-        item.className = `aspect-square rounded-lg flex items-center justify-center font-bold text-sm cursor-pointer hover:opacity-80 transition ${colorClass}`;
-        item.textContent = idx + 1;
-        item.onclick = () => reviewQuestion(idx);
-        grid.appendChild(item);
-    });
-}
-
-function reviewQuestion(index) {
-    quizState.currentIndex = index;
-    
-    document.getElementById('quiz-container').classList.remove('hidden');
-    document.getElementById('quiz-action-bar').classList.remove('hidden');
-    document.getElementById('quiz-overview').classList.add('hidden');
-    
-    renderQuizQuestion();
-}
-
-function restartQuiz() {
-    if (confirm('确定要重新开始吗？')) {
-        quizState.userAnswers = {};
-        quizState.currentIndex = 0;
-        quizState.submitted = false;
-        
-        document.getElementById('quiz-container').classList.remove('hidden');
-        document.getElementById('quiz-action-bar').classList.remove('hidden');
-        document.getElementById('quiz-overview').classList.add('hidden');
-        document.getElementById('quiz-mode-select').disabled = false;
-        
-        renderQuizQuestion();
-    }
-}
-
-// Global click for modal close
-window.onclick = function(event) {
-    const modal = document.getElementById('tree-modal');
-    if (event.target == modal) {
-        closeModal('tree-modal');
-    }
+function startReview() {
+    alert('开始今日复习计划...');
 }

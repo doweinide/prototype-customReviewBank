@@ -54,7 +54,7 @@
 </head>
 <body class="bg-bg h-screen flex overflow-hidden text-slate-800 antialiased selection:bg-blue-100 selection:text-primary">
     
-    <!-- Sidebar -->
+            <!-- Sidebar -->
     <aside class="w-72 bg-surface border-r border-slate-200 flex flex-col shrink-0 z-20 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
         <div class="h-20 flex items-center px-8">
             <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white mr-3 shadow-lg shadow-blue-500/30">
@@ -69,34 +69,34 @@
         <div class="p-6 flex-1 overflow-y-auto">
             <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 px-2">Menu</div>
             <nav class="space-y-2">
-                <div class="nav-item active flex items-center px-4 py-3 rounded-xl text-sm font-medium cursor-pointer text-primary bg-blue-50 transition-all duration-200 group" onclick="switchTab('home', this)">
+                <a href="index.html" class="nav-item active flex items-center px-4 py-3 rounded-xl text-sm font-medium cursor-pointer text-primary bg-blue-50 transition-all duration-200 group">
                     <i class="fas fa-home w-6 text-center mr-3 group-hover:scale-110 transition-transform"></i>
                     首页概览
-                </div>
-                <div class="nav-item flex items-center px-4 py-3 rounded-xl text-sm font-medium cursor-pointer text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200 group" onclick="switchTab('knowledge', this)">
+                </a>
+                <a href="knowledge.html" class="nav-item flex items-center px-4 py-3 rounded-xl text-sm font-medium cursor-pointer text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200 group">
                     <i class="fas fa-project-diagram w-6 text-center mr-3 group-hover:scale-110 transition-transform"></i>
                     知识体系
-                </div>
-                <div class="nav-item flex items-center px-4 py-3 rounded-xl text-sm font-medium cursor-pointer text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200 group" onclick="switchTab('note', this)">
+                </a>
+                <a href="note.html" class="nav-item flex items-center px-4 py-3 rounded-xl text-sm font-medium cursor-pointer text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200 group">
                     <i class="fas fa-book w-6 text-center mr-3 group-hover:scale-110 transition-transform"></i>
                     智能笔记
-                </div>
-                <div class="nav-item flex items-center px-4 py-3 rounded-xl text-sm font-medium cursor-pointer text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200 group" onclick="switchTab('quiz', this)">
+                </a>
+                <a href="quiz.html" class="nav-item flex items-center px-4 py-3 rounded-xl text-sm font-medium cursor-pointer text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200 group">
                     <i class="fas fa-pen-nib w-6 text-center mr-3 group-hover:scale-110 transition-transform"></i>
                     题库练习
-                </div>
+                </a>
             </nav>
 
             <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 px-2 mt-8">User</div>
             <nav class="space-y-2">
-                <div class="nav-item flex items-center px-4 py-3 rounded-xl text-sm font-medium cursor-pointer text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200 group" onclick="switchTab('center', this)">
+                <a href="center.html" class="nav-item flex items-center px-4 py-3 rounded-xl text-sm font-medium cursor-pointer text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200 group">
                     <i class="fas fa-user-circle w-6 text-center mr-3 group-hover:scale-110 transition-transform"></i>
                     个人中心
-                </div>
-                 <div class="nav-item flex items-center px-4 py-3 rounded-xl text-sm font-medium cursor-pointer text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200 group" onclick="openSettings()">
+                </a>
+                 <a href="center.html?tab=settings" class="nav-item flex items-center px-4 py-3 rounded-xl text-sm font-medium cursor-pointer text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200 group">
                     <i class="fas fa-cog w-6 text-center mr-3 group-hover:scale-110 transition-transform"></i>
                     系统设置
-                </div>
+                </a>
             </nav>
         </div>
         
@@ -123,33 +123,62 @@
                 
                 <!-- Top Stats (Compact) -->
                 <div class="grid grid-cols-4 gap-4 shrink-0 h-24">
-                    <div class="bg-surface rounded-xl p-4 border border-slate-200 shadow-sm flex flex-col justify-center">
-                        <div class="flex justify-between items-start mb-1">
-                            <span class="text-slate-500 text-xs font-medium">今日待复习</span>
-                            <i class="fas fa-history text-orange-500 bg-orange-50 p-1.5 rounded-md text-xs"></i>
+                    <div class="bg-surface rounded-xl p-4 border border-slate-200 shadow-sm flex flex-col justify-between relative overflow-hidden">
+                        <div class="flex justify-between items-start z-10">
+                            <div>
+                                <span class="text-slate-500 text-xs font-medium block mb-1">今日待复习</span>
+                                <div class="text-2xl font-bold text-slate-800 leading-none">15 <span class="text-xs font-normal text-slate-400">题</span></div>
+                            </div>
+                            <div class="w-8 h-8 rounded-lg bg-orange-50 text-orange-500 flex items-center justify-center text-sm"><i class="fas fa-history"></i></div>
                         </div>
-                        <div class="text-2xl font-bold text-slate-800">15 <span class="text-xs font-normal text-slate-400">题</span></div>
+                        <div class="w-full bg-slate-100 h-1.5 rounded-full mt-2 overflow-hidden z-10">
+                            <div class="bg-orange-500 h-full rounded-full" style="width: 45%"></div>
+                        </div>
+                        <div class="text-[10px] text-slate-400 mt-1 flex justify-between z-10">
+                            <span>目标 30 题</span>
+                            <span>45%</span>
+                        </div>
                     </div>
-                    <div class="bg-surface rounded-xl p-4 border border-slate-200 shadow-sm flex flex-col justify-center">
-                        <div class="flex justify-between items-start mb-1">
-                            <span class="text-slate-500 text-xs font-medium">知识掌握率</span>
-                            <i class="fas fa-chart-pie text-purple-500 bg-purple-50 p-1.5 rounded-md text-xs"></i>
+                    <div class="bg-surface rounded-xl p-4 border border-slate-200 shadow-sm flex flex-col justify-between">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-slate-500 text-xs font-medium block mb-1">知识掌握率</span>
+                                <div class="text-2xl font-bold text-slate-800 leading-none">85%</div>
+                            </div>
+                            <div class="w-8 h-8 rounded-lg bg-purple-50 text-purple-500 flex items-center justify-center text-sm"><i class="fas fa-chart-pie"></i></div>
                         </div>
-                        <div class="text-2xl font-bold text-slate-800">85% <span class="text-xs text-green-500 ml-1">↑ 2%</span></div>
+                        <div class="flex items-center gap-2 mt-2">
+                            <span class="text-xs font-bold text-green-500 bg-green-50 px-1.5 py-0.5 rounded">+2.4%</span>
+                            <span class="text-[10px] text-slate-400">较上周</span>
+                        </div>
                     </div>
-                    <div class="bg-surface rounded-xl p-4 border border-slate-200 shadow-sm flex flex-col justify-center">
-                        <div class="flex justify-between items-start mb-1">
-                            <span class="text-slate-500 text-xs font-medium">累计笔记</span>
-                            <i class="fas fa-book text-blue-500 bg-blue-50 p-1.5 rounded-md text-xs"></i>
+                    <div class="bg-surface rounded-xl p-4 border border-slate-200 shadow-sm flex flex-col justify-between">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-slate-500 text-xs font-medium block mb-1">累计笔记</span>
+                                <div class="text-2xl font-bold text-slate-800 leading-none">128 <span class="text-xs font-normal text-slate-400">篇</span></div>
+                            </div>
+                            <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center text-sm"><i class="fas fa-book"></i></div>
                         </div>
-                        <div class="text-2xl font-bold text-slate-800">128 <span class="text-xs font-normal text-slate-400">篇</span></div>
+                        <div class="text-[10px] text-slate-400 mt-2">
+                            <i class="fas fa-plus-circle text-blue-400 mr-1"></i>本周新增 12 篇
+                        </div>
                     </div>
-                    <div class="bg-surface rounded-xl p-4 border border-slate-200 shadow-sm flex flex-col justify-center">
-                        <div class="flex justify-between items-start mb-1">
-                            <span class="text-slate-500 text-xs font-medium">连续打卡</span>
-                            <i class="fas fa-fire text-emerald-500 bg-emerald-50 p-1.5 rounded-md text-xs"></i>
+                    <div class="bg-surface rounded-xl p-4 border border-slate-200 shadow-sm flex flex-col justify-between">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-slate-500 text-xs font-medium block mb-1">连续打卡</span>
+                                <div class="text-2xl font-bold text-slate-800 leading-none">12 <span class="text-xs font-normal text-slate-400">天</span></div>
+                            </div>
+                            <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-500 flex items-center justify-center text-sm"><i class="fas fa-fire"></i></div>
                         </div>
-                        <div class="text-2xl font-bold text-slate-800">12 <span class="text-xs font-normal text-slate-400">天</span></div>
+                        <div class="flex -space-x-1 mt-2 overflow-hidden">
+                            <div class="w-4 h-4 rounded-full bg-emerald-500 border border-white"></div>
+                            <div class="w-4 h-4 rounded-full bg-emerald-500 border border-white"></div>
+                            <div class="w-4 h-4 rounded-full bg-emerald-500 border border-white"></div>
+                            <div class="w-4 h-4 rounded-full bg-slate-200 border border-white"></div>
+                            <div class="w-4 h-4 rounded-full bg-slate-200 border border-white"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -158,16 +187,28 @@
                     
                     <!-- Left Column: Chart & Activity -->
                     <div class="col-span-9 flex flex-col gap-4 h-full">
-                        <!-- Main Chart -->
-                        <div class="bg-surface rounded-xl border border-slate-200 shadow-sm p-4 flex-1 flex flex-col min-h-0">
+                        <!-- Main Chart (Reduced Height) -->
+                        <div class="bg-surface rounded-xl border border-slate-200 shadow-sm p-4 h-[320px] shrink-0 flex flex-col">
                             <div class="flex justify-between items-center mb-2 shrink-0">
                                 <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
                                     <i class="fas fa-chart-area text-primary"></i> 学习数据分析
                                 </h3>
-                                <div class="flex gap-2">
-                                    <span class="flex items-center text-[10px] text-slate-500"><span class="w-2 h-2 rounded-full bg-blue-500 mr-1"></span>复习量</span>
-                                    <span class="flex items-center text-[10px] text-slate-500"><span class="w-2 h-2 rounded-full bg-emerald-500 mr-1"></span>新学</span>
-                                    <span class="flex items-center text-[10px] text-slate-500"><span class="w-2 h-2 rounded-full bg-red-400 mr-1"></span>错题</span>
+                                <div class="flex gap-3">
+                                    <div class="flex items-center gap-1.5 text-[10px] bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
+                                        <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                                        <span class="text-slate-600 font-medium">复习量</span>
+                                        <span class="text-slate-800 font-bold ml-1">145</span>
+                                    </div>
+                                    <div class="flex items-center gap-1.5 text-[10px] bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
+                                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                        <span class="text-slate-600 font-medium">新学</span>
+                                        <span class="text-slate-800 font-bold ml-1">68</span>
+                                    </div>
+                                    <div class="flex items-center gap-1.5 text-[10px] bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
+                                        <span class="w-2 h-2 rounded-full bg-red-400"></span>
+                                        <span class="text-slate-600 font-medium">错题</span>
+                                        <span class="text-slate-800 font-bold ml-1">12</span>
+                                    </div>
                                 </div>
                             </div>
                             <div class="relative flex-1 w-full min-h-0">
@@ -175,39 +216,79 @@
                             </div>
                         </div>
 
-                        <!-- Recent Activity List -->
-                        <div class="bg-surface rounded-xl border border-slate-200 shadow-sm p-4 h-48 shrink-0 flex flex-col">
-                            <h3 class="font-bold text-slate-800 text-sm mb-3">最近动态</h3>
-                            <div class="flex-1 overflow-y-auto pr-2 space-y-2">
-                                <div class="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-100 transition cursor-pointer">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-8 h-8 rounded bg-blue-50 text-blue-500 flex items-center justify-center text-xs"><i class="fas fa-pen"></i></div>
-                                        <div>
-                                            <div class="text-xs font-bold text-slate-700">Vue.js 基础核心</div>
-                                            <div class="text-[10px] text-slate-400">今天 14:30 • 练习 10 题</div>
-                                        </div>
-                                    </div>
-                                    <span class="text-xs font-bold text-green-600">90% 正确</span>
+                        <!-- Bottom Row: Split Activity & Weak Points -->
+                        <div class="flex-1 grid grid-cols-2 gap-4 min-h-0">
+                            <!-- Recent Activity -->
+                            <div class="bg-surface rounded-xl border border-slate-200 shadow-sm p-4 flex flex-col overflow-hidden">
+                                <div class="flex justify-between items-center mb-3 shrink-0">
+                                    <h3 class="font-bold text-slate-800 text-sm">最近动态</h3>
+                                    <button class="text-[10px] text-primary hover:bg-blue-50 px-2 py-0.5 rounded transition">查看全部</button>
                                 </div>
-                                <div class="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-100 transition cursor-pointer">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-8 h-8 rounded bg-purple-50 text-purple-500 flex items-center justify-center text-xs"><i class="fas fa-book"></i></div>
-                                        <div>
-                                            <div class="text-xs font-bold text-slate-700">React Hooks 笔记</div>
-                                            <div class="text-[10px] text-slate-400">昨天 • 新增笔记</div>
+                                <div class="flex-1 overflow-y-auto pr-1 space-y-2 custom-scrollbar">
+                                    <div class="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-100 group hover:border-blue-200 transition cursor-pointer">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded bg-white text-blue-500 flex items-center justify-center text-xs shadow-sm"><i class="fas fa-pen"></i></div>
+                                            <div>
+                                                <div class="text-xs font-bold text-slate-700 group-hover:text-primary transition">Vue.js 基础核心</div>
+                                                <div class="text-[10px] text-slate-400">14:30 • 练习 10 题</div>
+                                            </div>
                                         </div>
+                                        <span class="text-xs font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded">90%</span>
                                     </div>
-                                    <span class="text-xs text-slate-400">已关联 5 题</span>
+                                    <div class="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-100 group hover:border-purple-200 transition cursor-pointer">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded bg-white text-purple-500 flex items-center justify-center text-xs shadow-sm"><i class="fas fa-book"></i></div>
+                                            <div>
+                                                <div class="text-xs font-bold text-slate-700 group-hover:text-purple-600 transition">React Hooks 笔记</div>
+                                                <div class="text-[10px] text-slate-400">昨天 • 新增笔记</div>
+                                            </div>
+                                        </div>
+                                        <span class="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">5 关联</span>
+                                    </div>
+                                     <div class="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-100 group hover:border-orange-200 transition cursor-pointer">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded bg-white text-orange-500 flex items-center justify-center text-xs shadow-sm"><i class="fas fa-pen"></i></div>
+                                            <div>
+                                                <div class="text-xs font-bold text-slate-700 group-hover:text-orange-600 transition">JS 高级程序设计</div>
+                                                <div class="text-[10px] text-slate-400">昨天 • 练习 20 题</div>
+                                            </div>
+                                        </div>
+                                        <span class="text-xs font-bold text-orange-500 bg-orange-50 px-1.5 py-0.5 rounded">75%</span>
+                                    </div>
                                 </div>
-                                 <div class="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-100 transition cursor-pointer">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-8 h-8 rounded bg-orange-50 text-orange-500 flex items-center justify-center text-xs"><i class="fas fa-pen"></i></div>
-                                        <div>
-                                            <div class="text-xs font-bold text-slate-700">JS 高级程序设计</div>
-                                            <div class="text-[10px] text-slate-400">昨天 • 练习 20 题</div>
+                            </div>
+
+                            <!-- Weak Points / Recommended -->
+                            <div class="bg-surface rounded-xl border border-slate-200 shadow-sm p-4 flex flex-col overflow-hidden">
+                                <div class="flex justify-between items-center mb-3 shrink-0">
+                                    <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2"><i class="fas fa-crosshairs text-red-400"></i> 薄弱攻坚</h3>
+                                    <span class="text-[10px] text-slate-400">基于错题分析</span>
+                                </div>
+                                <div class="flex-1 overflow-y-auto pr-1 space-y-2 custom-scrollbar">
+                                    <div class="p-2.5 border border-slate-100 rounded-lg hover:shadow-sm transition cursor-pointer group">
+                                        <div class="flex justify-between items-center mb-1">
+                                            <span class="text-xs font-bold text-slate-700">Vue3 响应式原理</span>
+                                            <span class="text-[10px] text-red-500 font-bold bg-red-50 px-1.5 rounded">错误率 65%</span>
+                                        </div>
+                                        <div class="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
+                                            <div class="bg-red-400 h-full w-1/3"></div>
+                                        </div>
+                                        <div class="flex justify-end mt-1.5">
+                                            <button class="text-[10px] bg-white border border-slate-200 px-2 py-0.5 rounded text-slate-600 hover:text-primary hover:border-primary transition">立即专项练习</button>
                                         </div>
                                     </div>
-                                    <span class="text-xs font-bold text-orange-500">75% 正确</span>
+                                    <div class="p-2.5 border border-slate-100 rounded-lg hover:shadow-sm transition cursor-pointer group">
+                                        <div class="flex justify-between items-center mb-1">
+                                            <span class="text-xs font-bold text-slate-700">JS 原型链</span>
+                                            <span class="text-[10px] text-orange-500 font-bold bg-orange-50 px-1.5 rounded">错误率 40%</span>
+                                        </div>
+                                        <div class="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
+                                            <div class="bg-orange-400 h-full w-3/5"></div>
+                                        </div>
+                                         <div class="flex justify-end mt-1.5">
+                                            <button class="text-[10px] bg-white border border-slate-200 px-2 py-0.5 rounded text-slate-600 hover:text-primary hover:border-primary transition">立即专项练习</button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -216,432 +297,81 @@
                     <!-- Right Column: Actions & Distribution -->
                     <div class="col-span-3 flex flex-col gap-4 h-full">
                         
-                        <!-- Quick Actions (Distinct Style) -->
+                <!-- Quick Actions (Compact Grid) -->
                         <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-4 text-white shadow-md shrink-0">
-                            <h3 class="text-sm font-bold mb-3 text-slate-200">快捷操作</h3>
+                            <h3 class="text-sm font-bold mb-3 text-slate-200 flex justify-between items-center">
+                                快捷操作
+                                <i class="fas fa-ellipsis-h text-slate-500 text-xs cursor-pointer hover:text-white"></i>
+                            </h3>
                             <div class="grid grid-cols-2 gap-2">
-                                <button class="bg-white/10 hover:bg-white/20 transition p-2 rounded-lg flex flex-col items-center justify-center gap-1 h-20" onclick="startRandomQuiz()">
-                                    <i class="fas fa-magic text-blue-300"></i>
-                                    <span class="text-xs">随机测验</span>
+                                <button class="bg-white/10 hover:bg-white/20 transition p-2 rounded-lg flex items-center gap-3 group" onclick="window.location.href='quiz.html'">
+                                    <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-300 group-hover:text-white group-hover:bg-blue-500 transition"><i class="fas fa-magic"></i></div>
+                                    <span class="text-xs font-medium">随机测验</span>
                                 </button>
-                                <button class="bg-white/10 hover:bg-white/20 transition p-2 rounded-lg flex flex-col items-center justify-center gap-1 h-20" onclick="openKnowledgeTree()">
-                                    <i class="fas fa-bullseye text-indigo-300"></i>
-                                    <span class="text-xs">专项练习</span>
+                                <button class="bg-white/10 hover:bg-white/20 transition p-2 rounded-lg flex items-center gap-3 group" onclick="window.location.href='quiz.html'">
+                                    <div class="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-300 group-hover:text-white group-hover:bg-indigo-500 transition"><i class="fas fa-bullseye"></i></div>
+                                    <span class="text-xs font-medium">专项练习</span>
                                 </button>
-                                <button class="bg-white/10 hover:bg-white/20 transition p-2 rounded-lg flex flex-col items-center justify-center gap-1 h-20" onclick="alert('错题本')">
-                                    <i class="fas fa-times text-red-300"></i>
-                                    <span class="text-xs">错题本</span>
+                                <button class="bg-white/10 hover:bg-white/20 transition p-2 rounded-lg flex items-center gap-3 group" onclick="alert('错题本')">
+                                    <div class="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center text-red-300 group-hover:text-white group-hover:bg-red-500 transition"><i class="fas fa-times"></i></div>
+                                    <span class="text-xs font-medium">错题本</span>
                                 </button>
-                                <button class="bg-white/10 hover:bg-white/20 transition p-2 rounded-lg flex flex-col items-center justify-center gap-1 h-20" onclick="createNote()">
-                                    <i class="fas fa-plus text-emerald-300"></i>
-                                    <span class="text-xs">记笔记</span>
+                                <button class="bg-white/10 hover:bg-white/20 transition p-2 rounded-lg flex items-center gap-3 group" onclick="window.location.href='note.html'">
+                                    <div class="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-300 group-hover:text-white group-hover:bg-emerald-500 transition"><i class="fas fa-plus"></i></div>
+                                    <span class="text-xs font-medium">记笔记</span>
                                 </button>
                             </div>
                         </div>
 
-                        <!-- Knowledge Distribution -->
-                        <div class="bg-surface rounded-xl border border-slate-200 shadow-sm p-4 flex-1 flex flex-col min-h-0">
+                        <!-- Knowledge Category Progress (Replaced Daily Schedule) -->
+                        <div class="bg-surface rounded-xl border border-slate-200 shadow-sm p-4 flex-1 flex flex-col min-h-0 overflow-hidden">
+                             <div class="flex justify-between items-center mb-3 shrink-0">
+                                <h3 class="font-bold text-slate-800 text-sm">题库进度</h3>
+                                <span class="text-[10px] bg-slate-100 text-slate-500 px-1.5 rounded">总览</span>
+                            </div>
+                            <div class="flex-1 overflow-y-auto pr-1 space-y-3 custom-scrollbar" id="knowledge-progress-list">
+                                <!-- Dynamic Content -->
+                            </div>
+                        </div>
+
+                        <!-- Knowledge Distribution (Compact) -->
+                        <div class="bg-surface rounded-xl border border-slate-200 shadow-sm p-4 h-48 shrink-0 flex flex-col">
                             <div class="flex justify-between items-center mb-2 shrink-0">
                                 <h3 class="font-bold text-slate-800 text-sm">题库分布</h3>
-                                <i class="fas fa-cog text-slate-400 text-xs cursor-pointer hover:text-primary" onclick="switchTab('knowledge')"></i>
                             </div>
-                            <div class="relative flex-1 min-h-0">
-                                <canvas id="distributionChart"></canvas>
-                            </div>
-                            <div class="mt-2 space-y-1 overflow-y-auto max-h-32 text-xs pr-1 custom-scrollbar">
-                                <div class="flex justify-between items-center">
-                                    <span class="text-slate-500"><span class="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block mr-1"></span>JavaScript</span>
-                                    <span class="font-bold">45%</span>
+                            <div class="flex items-center h-full">
+                                <div class="w-24 h-24 shrink-0 relative">
+                                    <canvas id="distributionChart"></canvas>
                                 </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="text-slate-500"><span class="w-1.5 h-1.5 rounded-full bg-indigo-500 inline-block mr-1"></span>Vue.js</span>
-                                    <span class="font-bold">25%</span>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="text-slate-500"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block mr-1"></span>CSS</span>
-                                    <span class="font-bold">20%</span>
-                                </div>
-                                 <div class="flex justify-between items-center">
-                                    <span class="text-slate-500"><span class="w-1.5 h-1.5 rounded-full bg-orange-400 inline-block mr-1"></span>HTML</span>
-                                    <span class="font-bold">10%</span>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-            </div>
-
-            <!-- Knowledge Management View -->
-            <div id="view-knowledge" class="view-section hidden h-full">
-                <div class="grid grid-cols-12 gap-4 h-full">
-                    <div class="col-span-4 bg-surface rounded-xl shadow-sm border border-slate-200 flex flex-col h-full overflow-hidden">
-                        <div class="p-3 border-b border-slate-100 bg-slate-50 flex flex-col gap-2">
-                            <div class="flex justify-between items-center">
-                                <h3 class="font-bold text-slate-800">知识体系</h3>
-                                <div class="flex gap-1">
-                                    <button class="p-1.5 text-slate-500 hover:bg-slate-200 rounded transition" title="新建" onclick="addRootNode()"><i class="fas fa-plus"></i></button>
-                                    <button class="p-1.5 text-slate-500 hover:bg-slate-200 rounded transition" title="导入" onclick="importTreeJSON()"><i class="fas fa-file-import"></i></button>
-                                </div>
-                            </div>
-                            <input type="text" placeholder="搜索..." class="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-md focus:outline-none focus:border-primary" oninput="searchTree(this.value)">
-                        </div>
-                        <div class="flex-1 overflow-y-auto p-2" id="web-manage-tree-root"></div>
-                    </div>
-                    <div class="col-span-8 bg-surface rounded-xl shadow-sm border border-slate-200 flex flex-col h-full p-6 relative">
-                         <div id="knowledge-placeholder" class="flex flex-col items-center justify-center h-full text-slate-400">
-                             <i class="fas fa-project-diagram text-3xl mb-2 opacity-50"></i>
-                             <p class="text-sm">选择左侧节点查看详情</p>
-                         </div>
-                         <div id="knowledge-detail" class="hidden flex flex-col h-full">
-                              <header class="flex justify-between items-start mb-4 border-b border-slate-100 pb-4">
-                                  <div>
-                                      <h2 class="text-xl font-bold text-slate-800" id="selected-node-title">Node Title</h2>
-                                      <div class="text-xs text-slate-500 mt-1 flex gap-3">
-                                          <span class="bg-slate-100 px-1.5 rounded">ID: <span id="selected-node-id"></span></span>
-                                          <span>题目数: <span id="selected-node-count">0</span></span>
-                                      </div>
-                                  </div>
-                                  <div class="flex gap-2">
-                                      <button class="bg-primary text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-600 transition" onclick="showAddQuestionForm()">
-                                          <i class="fas fa-plus mr-1"></i>录入
-                                      </button>
-                                      <button class="bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-indigo-100 transition" onclick="showAIQuestionForm()">
-                                          <i class="fas fa-magic mr-1"></i>AI
-                                      </button>
-                                  </div>
-                              </header>
-                              <div class="flex-1 overflow-y-auto space-y-3" id="node-question-list"></div>
-                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Note View -->
-            <div id="view-note" class="view-section hidden h-full">
-                <div class="grid grid-cols-12 gap-4 h-full">
-                    <div class="col-span-4 bg-surface rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
-                        <div class="p-3 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                            <h3 class="font-bold text-slate-800">笔记列表</h3>
-                            <button class="text-primary hover:bg-blue-50 p-1.5 rounded" onclick="createNote()"><i class="fas fa-plus"></i></button>
-                        </div>
-                        <div class="flex-1 overflow-y-auto p-2" id="web-note-list"></div>
-                    </div>
-                    <div class="col-span-8 bg-surface rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden p-6 relative">
-                        <div id="web-note-editor" class="flex flex-col h-full hidden">
-                            <input type="text" id="web-note-title" class="text-2xl font-bold w-full border-b border-transparent focus:border-slate-200 pb-2 focus:outline-none mb-4" placeholder="笔记标题">
-                            <div class="flex gap-3 mb-4 text-xs text-slate-500">
-                                <span class="bg-slate-100 px-2 py-1 rounded"><i class="fas fa-tag mr-1"></i><span id="web-note-tag">未分类</span></span>
-                                <span>2023-10-27</span>
-                            </div>
-                            <textarea id="web-note-content" class="flex-1 w-full resize-none focus:outline-none text-slate-700 leading-relaxed text-sm" placeholder="输入笔记内容..."></textarea>
-                            <div class="border-t border-slate-100 pt-4 mt-4">
-                                <div class="flex justify-between items-center mb-2">
-                                    <h4 class="font-bold text-slate-700 text-sm">关联题目</h4>
-                                    <div class="flex gap-2">
-                                        <button class="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded hover:bg-slate-200" onclick="generateQuestionsFromNote()">AI 生成</button>
-                                        <button class="text-xs bg-primary text-white px-3 py-1 rounded hover:bg-blue-600" onclick="saveNote()">保存</button>
+                                <div class="flex-1 pl-4 space-y-1.5 overflow-y-auto max-h-32 text-[10px] custom-scrollbar">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-slate-500 truncate w-16"><span class="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block mr-1"></span>JS</span>
+                                        <span class="font-bold">45%</span>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-slate-500 truncate w-16"><span class="w-1.5 h-1.5 rounded-full bg-indigo-500 inline-block mr-1"></span>Vue</span>
+                                        <span class="font-bold">25%</span>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-slate-500 truncate w-16"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block mr-1"></span>CSS</span>
+                                        <span class="font-bold">20%</span>
+                                    </div>
+                                     <div class="flex justify-between items-center">
+                                        <span class="text-slate-500 truncate w-16"><span class="w-1.5 h-1.5 rounded-full bg-orange-400 inline-block mr-1"></span>HTML</span>
+                                        <span class="font-bold">10%</span>
                                     </div>
                                 </div>
-                                <div id="web-note-questions" class="space-y-2 max-h-32 overflow-y-auto text-xs"></div>
                             </div>
                         </div>
-                        <div id="web-note-placeholder" class="flex flex-col items-center justify-center h-full text-slate-400">
-                            <i class="far fa-edit text-3xl mb-2 opacity-50"></i>
-                            <p class="text-sm">选择或新建笔记</p>
-                        </div>
+
                     </div>
                 </div>
             </div>
             
-            <!-- Quiz View -->
-            <div id="view-quiz" class="view-section hidden h-full">
-                <div class="h-full overflow-y-auto p-4 custom-scrollbar">
-                     <div class="max-w-4xl mx-auto">
-                        <h2 class="text-2xl font-bold text-slate-800 mb-6">题库练习</h2>
-                        <div class="grid grid-cols-3 gap-6 mb-8">
-                             <div class="bg-blue-600 text-white p-6 rounded-2xl shadow-lg cursor-pointer hover:bg-blue-700 transition" onclick="openKnowledgeTree()">
-                                 <i class="fas fa-layer-group text-3xl mb-4 opacity-80"></i>
-                                 <h3 class="font-bold text-lg">按知识点</h3>
-                                 <p class="text-blue-200 text-xs mt-1">系统化查漏补缺</p>
-                             </div>
-                             <div class="bg-surface p-6 rounded-2xl shadow-sm border border-slate-200 cursor-pointer hover:border-primary transition group" onclick="startRandomQuiz()">
-                                 <i class="fas fa-random text-3xl mb-4 text-green-500"></i>
-                                 <h3 class="font-bold text-lg text-slate-800 group-hover:text-primary">随机刷题</h3>
-                                 <p class="text-slate-400 text-xs mt-1">AI 智能推荐题目</p>
-                             </div>
-                             <div class="bg-surface p-6 rounded-2xl shadow-sm border border-slate-200 cursor-pointer hover:border-primary transition group" onclick="alert('即将上线')">
-                                 <i class="fas fa-stopwatch text-3xl mb-4 text-purple-500"></i>
-                                 <h3 class="font-bold text-lg text-slate-800 group-hover:text-primary">模拟考试</h3>
-                                 <p class="text-slate-400 text-xs mt-1">全真环境模拟</p>
-                             </div>
-                        </div>
-                        <h3 class="font-bold text-slate-800 mb-4">最近练习</h3>
-                        <div class="bg-surface rounded-xl border border-slate-200 overflow-hidden">
-                             <!-- Reuse history items -->
-                             <div class="p-4 border-b border-slate-100 flex justify-between items-center hover:bg-slate-50">
-                                 <div>
-                                     <div class="font-bold text-sm text-slate-800">Vue3 基础</div>
-                                     <div class="text-xs text-slate-400">10 题 • 昨天</div>
-                                 </div>
-                                 <div class="text-green-600 font-bold text-sm">90%</div>
-                             </div>
-                             <div class="p-4 border-b border-slate-100 flex justify-between items-center hover:bg-slate-50">
-                                 <div>
-                                     <div class="font-bold text-sm text-slate-800">JS 原型链</div>
-                                     <div class="text-xs text-slate-400">15 题 • 2天前</div>
-                                 </div>
-                                 <div class="text-orange-500 font-bold text-sm">75%</div>
-                             </div>
-                        </div>
-                     </div>
-            </div>
-            </div>
-
-            <!-- Center View -->
-            <div id="view-center" class="view-section hidden h-full">
-                <div class="h-full flex gap-6 p-4">
-                    <!-- Left Sidebar -->
-                    <div class="w-64 bg-surface rounded-xl shadow-sm border border-slate-200 flex flex-col shrink-0">
-                        <div class="p-6 border-b border-slate-100 flex flex-col items-center">
-                            <div class="w-20 h-20 bg-primary rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-blue-500/30 mb-3">AU</div>
-                            <h2 class="text-lg font-bold text-slate-800">Admin User</h2>
-                            <p class="text-xs text-slate-500">ID: 8839201</p>
-                        </div>
-                        <nav class="flex-1 p-3 space-y-1">
-                            <button onclick="switchCenterTab('profile', this)" class="center-nav-item w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg text-primary bg-blue-50 transition">
-                                <i class="fas fa-user w-6 text-center mr-2"></i> 个人资料
-                            </button>
-                            <button onclick="switchCenterTab('stats', this)" class="center-nav-item w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg text-slate-600 hover:bg-slate-50 transition">
-                                <i class="fas fa-chart-pie w-6 text-center mr-2"></i> 学习统计
-                            </button>
-                            <button onclick="switchCenterTab('settings', this)" class="center-nav-item w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg text-slate-600 hover:bg-slate-50 transition">
-                                <i class="fas fa-cog w-6 text-center mr-2"></i> 系统设置
-                            </button>
-                            <button onclick="switchCenterTab('security', this)" class="center-nav-item w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg text-slate-600 hover:bg-slate-50 transition">
-                                <i class="fas fa-shield-alt w-6 text-center mr-2"></i> 账号安全
-                            </button>
-                        </nav>
-                        <div class="p-4 border-t border-slate-100">
-                            <button class="w-full flex items-center justify-center px-4 py-2 text-sm text-red-500 bg-red-50 hover:bg-red-100 rounded-lg transition font-medium" onclick="alert('退出登录')">
-                                <i class="fas fa-sign-out-alt mr-2"></i> 退出登录
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Right Content -->
-                    <div class="flex-1 bg-surface rounded-xl shadow-sm border border-slate-200 overflow-hidden relative">
-                        
-                        <!-- Profile Panel -->
-                        <div id="center-panel-profile" class="center-panel h-full flex flex-col p-8 overflow-y-auto">
-                            <h3 class="text-xl font-bold text-slate-800 mb-6 pb-4 border-b border-slate-100">基本资料</h3>
-                            <div class="max-w-2xl space-y-6">
-                                <div class="grid grid-cols-2 gap-6">
-                                    <div>
-                                        <label class="block text-sm font-bold text-slate-700 mb-2">昵称</label>
-                                        <input type="text" value="Admin User" class="w-full p-3 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary transition">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-bold text-slate-700 mb-2">职位/头衔</label>
-                                        <input type="text" value="高级前端工程师" class="w-full p-3 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary transition">
-                                    </div>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-bold text-slate-700 mb-2">个人简介</label>
-                                    <textarea class="w-full p-3 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary resize-none h-32 transition">热爱技术，专注前端领域。</textarea>
-                                </div>
-                                <div class="flex justify-end pt-4">
-                                    <button class="px-6 py-2.5 bg-primary text-white text-sm font-bold rounded-lg hover:bg-blue-600 transition shadow-lg shadow-blue-500/20">保存修改</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Stats Panel -->
-                        <div id="center-panel-stats" class="center-panel hidden h-full flex flex-col p-8 overflow-y-auto">
-                            <h3 class="text-xl font-bold text-slate-800 mb-6 pb-4 border-b border-slate-100">学习统计</h3>
-                            
-                            <!-- Key Metrics -->
-                            <div class="grid grid-cols-4 gap-4 mb-8">
-                                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-center">
-                                    <div class="text-2xl font-bold text-primary mb-1">45h</div>
-                                    <div class="text-xs text-slate-500">累计时长</div>
-                                </div>
-                                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-center">
-                                    <div class="text-2xl font-bold text-green-500 mb-1">1,208</div>
-                                    <div class="text-xs text-slate-500">总练习题</div>
-                                </div>
-                                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-center">
-                                    <div class="text-2xl font-bold text-orange-500 mb-1">12</div>
-                                    <div class="text-xs text-slate-500">连续打卡</div>
-                                </div>
-                                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-center">
-                                    <div class="text-2xl font-bold text-purple-500 mb-1">Lv.5</div>
-                                    <div class="text-xs text-slate-500">当前等级</div>
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-8 h-80">
-                                <!-- Radar Chart Container -->
-                                <div class="bg-white rounded-xl border border-slate-100 p-4 flex flex-col items-center justify-center relative">
-                                    <h4 class="absolute top-4 left-4 text-sm font-bold text-slate-700">能力模型</h4>
-                                    <div class="w-full h-full relative">
-                                        <canvas id="centerRadarChart"></canvas>
-                                    </div>
-                                </div>
-                                <!-- Heatmap Placeholder -->
-                                <div class="bg-white rounded-xl border border-slate-100 p-4 flex flex-col">
-                                    <h4 class="text-sm font-bold text-slate-700 mb-4">学习热力图</h4>
-                                    <div class="flex-1 grid grid-cols-12 gap-1 content-center opacity-80">
-                                        <!-- Mock Heatmap Blocks -->
-                                        <script>
-                                            for(let i=0; i<84; i++) {
-                                                document.write(`<div class="aspect-square rounded-sm ${Math.random()>0.7 ? 'bg-green-500' : (Math.random()>0.4 ? 'bg-green-200' : 'bg-slate-100')}"></div>`);
-                                            }
-                                        </script>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Settings Panel -->
-                        <div id="center-panel-settings" class="center-panel hidden h-full flex flex-col p-8 overflow-y-auto">
-                            <h3 class="text-xl font-bold text-slate-800 mb-6 pb-4 border-b border-slate-100">系统设置</h3>
-                            <div class="max-w-2xl space-y-8">
-                                <!-- Preferences -->
-                                <div>
-                                    <h4 class="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2"><i class="fas fa-sliders-h text-slate-400"></i> 偏好设置</h4>
-                                    <div class="space-y-4">
-                                        <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-100">
-                                            <div>
-                                                <div class="text-sm font-bold text-slate-700">音效反馈</div>
-                                                <div class="text-xs text-slate-500">答题正确/错误时的声音提示</div>
-                                            </div>
-                                            <label class="relative inline-flex items-center cursor-pointer">
-                                                <input type="checkbox" class="sr-only peer" id="setting-sound" checked onchange="toggleSound(this)">
-                                                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                                            </label>
-                                        </div>
-                                        <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-100">
-                                            <div>
-                                                <div class="text-sm font-bold text-slate-700">深色模式</div>
-                                                <div class="text-xs text-slate-500">适合夜间使用的深色外观 (开发中)</div>
-                                            </div>
-                                            <label class="relative inline-flex items-center cursor-pointer">
-                                                <input type="checkbox" class="sr-only peer" disabled>
-                                                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all opacity-50 cursor-not-allowed"></div>
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Data Management -->
-                                <div>
-                                    <h4 class="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2"><i class="fas fa-database text-slate-400"></i> 数据管理</h4>
-                                    <div class="grid grid-cols-2 gap-4">
-                                        <button onclick="exportAllData()" class="flex items-center justify-center gap-2 p-4 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition text-sm font-medium text-slate-700 shadow-sm">
-                                            <i class="fas fa-download text-primary"></i> 备份数据
-                                        </button>
-                                        <button onclick="document.getElementById('web-import-file').click()" class="flex items-center justify-center gap-2 p-4 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition text-sm font-medium text-slate-700 shadow-sm">
-                                            <i class="fas fa-upload text-green-500"></i> 恢复数据
-                                        </button>
-                                        <input type="file" id="web-import-file" class="hidden" accept=".json" onchange="importAllData(this)">
-                                        
-                                        <button onclick="clearAllData()" class="col-span-2 flex items-center justify-center gap-2 p-4 bg-red-50 border border-red-100 rounded-lg hover:bg-red-100 transition text-sm font-medium text-red-600">
-                                            <i class="fas fa-trash-alt"></i> 清空所有数据 (危险)
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Security Panel -->
-                        <div id="center-panel-security" class="center-panel hidden h-full flex flex-col p-8 overflow-y-auto">
-                            <h3 class="text-xl font-bold text-slate-800 mb-6 pb-4 border-b border-slate-100">账号安全</h3>
-                            <div class="max-w-2xl space-y-4">
-                                <div class="flex items-center justify-between p-5 border border-slate-200 rounded-xl bg-white hover:shadow-sm transition">
-                                    <div class="flex items-center gap-4">
-                                        <div class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500"><i class="fas fa-lock"></i></div>
-                                        <div>
-                                            <div class="font-bold text-slate-800 text-sm">登录密码</div>
-                                            <div class="text-xs text-slate-500 mt-1">建议定期修改密码以保护账号安全</div>
-                                        </div>
-                                    </div>
-                                    <button class="text-primary text-xs font-bold bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition">修改</button>
-                                </div>
-                                <div class="flex items-center justify-between p-5 border border-slate-200 rounded-xl bg-white hover:shadow-sm transition">
-                                    <div class="flex items-center gap-4">
-                                        <div class="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center text-green-500"><i class="fas fa-envelope"></i></div>
-                                        <div>
-                                            <div class="font-bold text-slate-800 text-sm">绑定邮箱</div>
-                                            <div class="text-xs text-slate-500 mt-1">已绑定：admin@example.com</div>
-                                        </div>
-                                    </div>
-                                    <span class="text-slate-400 text-xs font-bold bg-slate-50 px-3 py-1.5 rounded-lg cursor-not-allowed">已绑定</span>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-            </div>
-
         </div>
     </main>
 
-    <!-- Global Modals -->
-    <div id="tree-modal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center">
-        <div class="bg-surface rounded-xl w-[500px] max-h-[80vh] flex flex-col shadow-2xl border border-slate-100">
-            <div class="p-4 border-b border-slate-100 flex justify-between items-center">
-                <h3 class="font-bold text-slate-800">选择知识点</h3>
-                <button onclick="closeModal('tree-modal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="flex-1 overflow-y-auto p-4" id="tree-root"></div>
-        </div>
-    </div>
-    
-    <!-- Add Question Overlay (Reused) -->
-    <div id="add-question-overlay" class="absolute inset-0 bg-black/20 z-50 hidden flex items-center justify-center backdrop-blur-sm">
-        <div class="bg-white w-[600px] rounded-xl shadow-2xl flex flex-col max-h-[90vh]">
-             <div class="p-4 border-b border-slate-100 flex justify-between items-center">
-                 <h3 class="font-bold">录入题目</h3>
-                 <button onclick="hideAddQuestionForm()"><i class="fas fa-times"></i></button>
-             </div>
-             <div class="p-6 overflow-y-auto flex-1 space-y-4">
-                 <textarea id="new-q-title" class="w-full border p-3 rounded-lg text-sm" placeholder="题目内容..." rows="3"></textarea>
-                 <div class="grid grid-cols-2 gap-4">
-                     <select id="new-q-type" class="border p-2 rounded-lg text-sm"><option value="单选题">单选题</option><option value="多选题">多选题</option></select>
-                     <select class="border p-2 rounded-lg text-sm"><option value="easy">简单</option><option value="medium">中等</option></select>
-                 </div>
-                 <div id="new-q-options" class="space-y-2">
-                     <input placeholder="选项 A" class="w-full border p-2 rounded text-sm">
-                     <input placeholder="选项 B" class="w-full border p-2 rounded text-sm">
-                     <input placeholder="选项 C" class="w-full border p-2 rounded text-sm">
-                     <input placeholder="选项 D" class="w-full border p-2 rounded text-sm">
-                 </div>
-             </div>
-             <div class="p-4 border-t border-slate-100 flex justify-end gap-2">
-                 <button class="px-4 py-2 text-sm text-slate-600" onclick="hideAddQuestionForm()">取消</button>
-                 <button class="px-4 py-2 text-sm bg-primary text-white rounded-lg" onclick="saveNewQuestion()">保存</button>
-             </div>
-        </div>
-    </div>
-
-    <!-- Batch Import Overlay -->
-    <div id="batch-import-overlay" class="absolute inset-0 bg-black/20 z-50 hidden flex items-center justify-center backdrop-blur-sm">
-        <div class="bg-white w-[500px] rounded-xl shadow-2xl flex flex-col max-h-[90vh]">
-             <div class="p-4 border-b border-slate-100 flex justify-between items-center">
-                 <h3 class="font-bold">批量导入</h3>
-                 <button onclick="hideBatchImportForm()"><i class="fas fa-times"></i></button>
-             </div>
-             <div class="p-4 flex-1">
-                 <textarea id="batch-import-input" class="w-full h-64 border p-3 rounded-lg font-mono text-xs" placeholder="Paste JSON here..."></textarea>
-             </div>
-             <div class="p-4 border-t border-slate-100 flex justify-end gap-2">
-                 <button class="px-4 py-2 text-sm text-slate-600" onclick="hideBatchImportForm()">取消</button>
-                 <button class="px-4 py-2 text-sm bg-primary text-white rounded-lg" onclick="processBatchImportQuestions()">导入</button>
-             </div>
-        </div>
-    </div>
+    <!-- Global Modals (if any needed for Home) -->
     
     <script src="script.js"></script>
 </body>

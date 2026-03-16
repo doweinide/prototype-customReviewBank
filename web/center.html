@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智库 AI - 个人中心 (Web版)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#3b82f6', // blue-500
+                        secondary: '#64748b', // slate-500
+                        bg: '#f1f5f9', // slate-100
+                        surface: '#ffffff',
+                    },
+                    boxShadow: {
+                        'sm': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                        'DEFAULT': '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+                        'md': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        .view-section {
+            animation: fadeIn 0.3s ease-out forwards;
+            height: 100%;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-bg h-screen flex overflow-hidden text-slate-800 antialiased selection:bg-blue-100 selection:text-primary">
+    
+    <!-- Sidebar -->
+    <aside class="w-72 bg-surface border-r border-slate-200 flex flex-col shrink-0 z-20 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
+        <div class="h-20 flex items-center px-8">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white mr-3 shadow-lg shadow-blue-500/30">
+                <i class="fas fa-brain text-lg"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold text-slate-800 tracking-tight">智库 AI</h1>
+                <p class="text-[10px] text-slate-400 font-medium tracking-wider">KNOWLEDGE BRAIN</p>
+            </div>
+        </div>
+        
+        <div class="p-6 flex-1 overflow-y-auto">
+            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 px-2">Menu</div>
+            <nav class="space-y-2">
+                <a href="index.html" class="nav-item flex items-center px-4 py-3 rounded-xl text-sm font-medium cursor-pointer text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200 group">
+                    <i class="fas fa-home w-6 text-center mr-3 group-hover:scale-110 transition-transform"></i>
+                    首页概览
+                </a>
+                <a href="knowledge.html" class="nav-item flex items-center px-4 py-3 rounded-xl text-sm font-medium cursor-pointer text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200 group">
+                    <i class="fas fa-project-diagram w-6 text-center mr-3 group-hover:scale-110 transition-transform"></i>
+                    知识体系
+                </a>
+                <a href="note.html" class="nav-item flex items-center px-4 py-3 rounded-xl text-sm font-medium cursor-pointer text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200 group">
+                    <i class="fas fa-book w-6 text-center mr-3 group-hover:scale-110 transition-transform"></i>
+                    智能笔记
+                </a>
+                <a href="quiz.html" class="nav-item flex items-center px-4 py-3 rounded-xl text-sm font-medium cursor-pointer text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200 group">
+                    <i class="fas fa-pen-nib w-6 text-center mr-3 group-hover:scale-110 transition-transform"></i>
+                    题库练习
+                </a>
+            </nav>
+
+            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 px-2 mt-8">User</div>
+            <nav class="space-y-2">
+                <a href="center.html" class="nav-item active flex items-center px-4 py-3 rounded-xl text-sm font-medium cursor-pointer text-primary bg-blue-50 transition-all duration-200 group">
+                    <i class="fas fa-user-circle w-6 text-center mr-3 group-hover:scale-110 transition-transform"></i>
+                    个人中心
+                </a>
+                 <a href="center.html?tab=settings" class="nav-item flex items-center px-4 py-3 rounded-xl text-sm font-medium cursor-pointer text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200 group">
+                    <i class="fas fa-cog w-6 text-center mr-3 group-hover:scale-110 transition-transform"></i>
+                    系统设置
+                </a>
+            </nav>
+        </div>
+        
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col relative overflow-hidden bg-bg">
+        <!-- Top Bar -->
+        <header class="h-16 bg-surface border-b border-slate-200 flex items-center justify-between px-6 shrink-0">
+            <div class="flex items-center text-sm text-slate-500">
+                <span class="font-semibold text-slate-800" id="page-title">个人中心</span>
+            </div>
+            <div class="flex items-center gap-4">
+                 <div class="text-xs text-slate-400">上次同步: 刚刚</div>
+                 <div class="w-8 h-8 rounded-full bg-blue-100 text-primary flex items-center justify-center font-bold text-xs">AU</div>
+            </div>
+        </header>
+
+        <!-- Content Area -->
+        <div id="content-area" class="flex-1 p-4 overflow-hidden h-[calc(100vh-64px)]">
+            
+            <!-- Center View -->
+            <div id="view-center" class="view-section h-full">
+                <div class="h-full flex gap-6 p-4">
+                    <!-- Left Sidebar -->
+                    <div class="w-64 bg-surface rounded-xl shadow-sm border border-slate-200 flex flex-col shrink-0">
+                        <div class="p-6 border-b border-slate-100 flex flex-col items-center">
+                            <div class="w-20 h-20 bg-primary rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-blue-500/30 mb-3">AU</div>
+                            <h2 class="text-lg font-bold text-slate-800">Admin User</h2>
+                            <p class="text-xs text-slate-500">ID: 8839201</p>
+                        </div>
+                        <nav class="flex-1 p-3 space-y-1">
+                            <button onclick="switchCenterTab('profile', this)" class="center-nav-item w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg text-primary bg-blue-50 transition">
+                                <i class="fas fa-user w-6 text-center mr-2"></i> 个人资料
+                            </button>
+                            <button onclick="switchCenterTab('stats', this)" class="center-nav-item w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg text-slate-600 hover:bg-slate-50 transition">
+                                <i class="fas fa-chart-pie w-6 text-center mr-2"></i> 学习统计
+                            </button>
+                            <button onclick="switchCenterTab('settings', this)" class="center-nav-item w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg text-slate-600 hover:bg-slate-50 transition">
+                                <i class="fas fa-cog w-6 text-center mr-2"></i> 系统设置
+                            </button>
+                            <button onclick="switchCenterTab('security', this)" class="center-nav-item w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg text-slate-600 hover:bg-slate-50 transition">
+                                <i class="fas fa-shield-alt w-6 text-center mr-2"></i> 账号安全
+                            </button>
+                        </nav>
+                        <div class="p-4 border-t border-slate-100">
+                            <button class="w-full flex items-center justify-center px-4 py-2 text-sm text-red-500 bg-red-50 hover:bg-red-100 rounded-lg transition font-medium" onclick="alert('退出登录')">
+                                <i class="fas fa-sign-out-alt mr-2"></i> 退出登录
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right Content -->
+                    <div class="flex-1 bg-surface rounded-xl shadow-sm border border-slate-200 overflow-hidden relative">
+                        
+                        <!-- Profile Panel -->
+                        <div id="center-panel-profile" class="center-panel h-full flex flex-col p-8 overflow-y-auto">
+                            <h3 class="text-xl font-bold text-slate-800 mb-6 pb-4 border-b border-slate-100">基本资料</h3>
+                            <div class="max-w-2xl space-y-6">
+                                <div class="grid grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-sm font-bold text-slate-700 mb-2">昵称</label>
+                                        <input type="text" value="Admin User" class="w-full p-3 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary transition">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-bold text-slate-700 mb-2">职位/头衔</label>
+                                        <input type="text" value="高级前端工程师" class="w-full p-3 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary transition">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">个人简介</label>
+                                    <textarea class="w-full p-3 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary resize-none h-32 transition">热爱技术，专注前端领域。</textarea>
+                                </div>
+                                <div class="flex justify-end pt-4">
+                                    <button class="px-6 py-2.5 bg-primary text-white text-sm font-bold rounded-lg hover:bg-blue-600 transition shadow-lg shadow-blue-500/20">保存修改</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Stats Panel -->
+                        <div id="center-panel-stats" class="center-panel hidden h-full flex flex-col p-8 overflow-y-auto">
+                            <h3 class="text-xl font-bold text-slate-800 mb-6 pb-4 border-b border-slate-100">学习统计</h3>
+                            
+                            <!-- Key Metrics -->
+                            <div class="grid grid-cols-4 gap-4 mb-8">
+                                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-center">
+                                    <div class="text-2xl font-bold text-primary mb-1">45h</div>
+                                    <div class="text-xs text-slate-500">累计时长</div>
+                                </div>
+                                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-center">
+                                    <div class="text-2xl font-bold text-green-500 mb-1">1,208</div>
+                                    <div class="text-xs text-slate-500">总练习题</div>
+                                </div>
+                                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-center">
+                                    <div class="text-2xl font-bold text-orange-500 mb-1">12</div>
+                                    <div class="text-xs text-slate-500">连续打卡</div>
+                                </div>
+                                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-center">
+                                    <div class="text-2xl font-bold text-purple-500 mb-1">Lv.5</div>
+                                    <div class="text-xs text-slate-500">当前等级</div>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-8 h-80">
+                                <!-- Radar Chart Container -->
+                                <div class="bg-white rounded-xl border border-slate-100 p-4 flex flex-col items-center justify-center relative">
+                                    <h4 class="absolute top-4 left-4 text-sm font-bold text-slate-700">能力模型</h4>
+                                    <div class="w-full h-full relative">
+                                        <canvas id="centerRadarChart"></canvas>
+                                    </div>
+                                </div>
+                                <!-- Heatmap Placeholder -->
+                                <div class="bg-white rounded-xl border border-slate-100 p-4 flex flex-col">
+                                    <h4 class="text-sm font-bold text-slate-700 mb-4">学习热力图</h4>
+                                    <div class="flex-1 grid grid-cols-12 gap-1 content-center opacity-80">
+                                        <!-- Mock Heatmap Blocks -->
+                                        <script>
+                                            for(let i=0; i<84; i++) {
+                                                document.write(`<div class="aspect-square rounded-sm ${Math.random()>0.7 ? 'bg-green-500' : (Math.random()>0.4 ? 'bg-green-200' : 'bg-slate-100')}"></div>`);
+                                            }
+                                        </script>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Settings Panel -->
+                        <div id="center-panel-settings" class="center-panel hidden h-full flex flex-col p-8 overflow-y-auto">
+                            <h3 class="text-xl font-bold text-slate-800 mb-6 pb-4 border-b border-slate-100">系统设置</h3>
+                            <div class="max-w-2xl space-y-8">
+                                <!-- Preferences -->
+                                <div>
+                                    <h4 class="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2"><i class="fas fa-sliders-h text-slate-400"></i> 偏好设置</h4>
+                                    <div class="space-y-4">
+                                        <!-- AI Settings -->
+                                        <div class="bg-slate-50 rounded-lg border border-slate-100 p-4 space-y-4">
+                                            <div class="flex items-center justify-between">
+                                                <div class="flex items-center gap-2">
+                                                    <i class="fas fa-robot text-indigo-500"></i>
+                                                    <span class="text-sm font-bold text-slate-700">AI 服务设置</span>
+                                                </div>
+                                                <span class="text-xs text-slate-400">用于题目生成和智能分析</span>
+                                            </div>
+                                            <div class="grid grid-cols-1 gap-3">
+                                                <div>
+                                                    <label class="block text-xs font-medium text-slate-500 mb-1">服务提供商</label>
+                                                    <div class="relative">
+                                                        <select id="web-ai-provider" class="w-full pl-8 p-2 text-xs border border-slate-200 rounded-md focus:outline-none focus:border-primary bg-white appearance-none" onchange="saveAISettings()">
+                                                            <option value="openai">OpenAI (GPT-3.5/4)</option>
+                                                            <option value="azure">Azure OpenAI</option>
+                                                            <option value="anthropic">Anthropic (Claude)</option>
+                                                            <option value="local">Local LLM (Ollama)</option>
+                                                        </select>
+                                                        <i class="fas fa-server absolute left-2.5 top-2.5 text-slate-400 text-xs"></i>
+                                                        <i class="fas fa-chevron-down absolute right-2.5 top-2.5 text-slate-400 text-xs pointer-events-none"></i>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label class="block text-xs font-medium text-slate-500 mb-1">API Key</label>
+                                                    <div class="flex gap-2">
+                                                        <div class="relative flex-1">
+                                                            <input type="password" id="web-ai-key" class="w-full pl-8 p-2 text-xs border border-slate-200 rounded-md focus:outline-none focus:border-primary pr-8" placeholder="sk-..." onchange="saveAISettings()">
+                                                            <i class="fas fa-key absolute left-2.5 top-2.5 text-slate-400 text-xs"></i>
+                                                            <i class="fas fa-eye absolute right-2.5 top-2.5 text-slate-400 cursor-pointer text-xs hover:text-primary transition" onclick="togglePassword('web-ai-key')"></i>
+                                                        </div>
+                                                        <button onclick="testAIConnection('web')" class="px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-md text-xs font-medium hover:bg-slate-50 hover:text-primary hover:border-blue-200 transition whitespace-nowrap" id="web-ai-test-btn">
+                                                            <i class="fas fa-plug mr-1"></i> 测试
+                                                        </button>
+                                                    </div>
+                                                    <div id="web-ai-status" class="hidden mt-2 text-[10px] flex items-center gap-1"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-100">
+                                            <div>
+                                                <div class="text-sm font-bold text-slate-700">音效反馈</div>
+                                                <div class="text-xs text-slate-500">答题正确/错误时的声音提示</div>
+                                            </div>
+                                            <label class="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" class="sr-only peer" id="setting-sound" checked onchange="toggleSound(this)">
+                                                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                                            </label>
+                                        </div>
+                                        <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-100">
+                                            <div>
+                                                <div class="text-sm font-bold text-slate-700">深色模式</div>
+                                                <div class="text-xs text-slate-500">适合夜间使用的深色外观 (开发中)</div>
+                                            </div>
+                                            <label class="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" class="sr-only peer" disabled>
+                                                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all opacity-50 cursor-not-allowed"></div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Data Management -->
+                                <div>
+                                    <h4 class="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2"><i class="fas fa-database text-slate-400"></i> 数据管理</h4>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <button onclick="exportAllData()" class="flex items-center justify-center gap-2 p-4 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition text-sm font-medium text-slate-700 shadow-sm">
+                                            <i class="fas fa-download text-primary"></i> 备份数据
+                                        </button>
+                                        <button onclick="document.getElementById('web-import-file').click()" class="flex items-center justify-center gap-2 p-4 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition text-sm font-medium text-slate-700 shadow-sm">
+                                            <i class="fas fa-upload text-green-500"></i> 恢复数据
+                                        </button>
+                                        <input type="file" id="web-import-file" class="hidden" accept=".json" onchange="importAllData(this)">
+                                        
+                                        <button onclick="clearAllData()" class="col-span-2 flex items-center justify-center gap-2 p-4 bg-red-50 border border-red-100 rounded-lg hover:bg-red-100 transition text-sm font-medium text-red-600">
+                                            <i class="fas fa-trash-alt"></i> 清空所有数据 (危险)
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Security Panel -->
+                        <div id="center-panel-security" class="center-panel hidden h-full flex flex-col p-8 overflow-y-auto">
+                            <h3 class="text-xl font-bold text-slate-800 mb-6 pb-4 border-b border-slate-100">账号安全</h3>
+                            <div class="max-w-2xl space-y-4">
+                                <div class="flex items-center justify-between p-5 border border-slate-200 rounded-xl bg-white hover:shadow-sm transition">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500"><i class="fas fa-lock"></i></div>
+                                        <div>
+                                            <div class="font-bold text-slate-800 text-sm">登录密码</div>
+                                            <div class="text-xs text-slate-500 mt-1">建议定期修改密码以保护账号安全</div>
+                                        </div>
+                                    </div>
+                                    <button class="text-primary text-xs font-bold bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition">修改</button>
+                                </div>
+                                <div class="flex items-center justify-between p-5 border border-slate-200 rounded-xl bg-white hover:shadow-sm transition">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center text-green-500"><i class="fas fa-envelope"></i></div>
+                                        <div>
+                                            <div class="font-bold text-slate-800 text-sm">绑定邮箱</div>
+                                            <div class="text-xs text-slate-500 mt-1">已绑定：admin@example.com</div>
+                                        </div>
+                                    </div>
+                                    <span class="text-slate-400 text-xs font-bold bg-slate-50 px-3 py-1.5 rounded-lg cursor-not-allowed">已绑定</span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+    
+    <script src="script.js"></script>
+</body>
+</html>

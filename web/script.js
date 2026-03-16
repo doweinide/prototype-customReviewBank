@@ -144,50 +144,85 @@ let currentEditingNoteId = null;
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
-    initWeb();
+    initPage();
 });
 
-function initWeb() {
-    renderWebNoteList();
-    renderTree(knowledgeTreeData, document.getElementById('web-manage-tree-root'), 'manage');
-    
-    // Preview Tree on Home
+function initPage() {
+    const path = window.location.pathname;
+    const page = path.split('/').pop() || 'index.html';
+
+    // Highlight Sidebar
+    highlightSidebar(page);
+
+    // Common Init
+    loadSettings();
+
+    // Page Specific Init
+    if (page === 'index.html' || page === '') {
+        initHome();
+    } else if (page === 'knowledge.html') {
+        initKnowledge();
+    } else if (page === 'note.html') {
+        initNote();
+    } else if (page === 'quiz.html') {
+        initQuiz();
+    } else if (page === 'center.html') {
+        initCenter();
+    }
+}
+
+function highlightSidebar(page) {
+    // Remove active class from all
+    document.querySelectorAll('.nav-item').forEach(el => {
+        el.classList.remove('active', 'text-primary', 'bg-blue-50');
+        el.classList.add('text-slate-600', 'hover:bg-slate-50', 'hover:text-slate-900');
+    });
+
+    // Find current link
+    const link = document.querySelector(`.nav-item[href="${page}"]`) || document.querySelector(`.nav-item[href="index.html"]`);
+    if (link) {
+        link.classList.add('active', 'text-primary', 'bg-blue-50');
+        link.classList.remove('text-slate-600', 'hover:bg-slate-50', 'hover:text-slate-900');
+    }
+}
+
+function initHome() {
+    // Preview Tree
     const previewContainer = document.getElementById('home-tree-preview');
     if (previewContainer) {
         renderTree(knowledgeTreeData, previewContainer, 'normal');
     }
-    
+    renderKnowledgeProgress();
     initCharts();
 }
 
-// Navigation
-function switchTab(tabName, element) {
-    // Hide all views
-    document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
-    
-    // Show selected view
-    document.getElementById(`view-${tabName}`).classList.remove('hidden');
-    
-    // Update Sidebar State
-    if (element) {
-        document.querySelectorAll('.nav-item').forEach(el => {
-            el.classList.remove('active', 'text-primary', 'bg-blue-50');
-            el.classList.add('text-gray-600', 'hover:bg-gray-50', 'hover:text-primary');
-        });
-        element.classList.add('active', 'text-primary', 'bg-blue-50');
-        element.classList.remove('text-gray-600', 'hover:bg-gray-50', 'hover:text-primary');
-    }
-    
-    // Update Title
-    const titles = {
-        'home': '首页概览',
-        'knowledge': '知识体系管理',
-        'note': '智能笔记',
-        'quiz': '题库练习',
-        'center': '个人中心'
-    };
-    document.getElementById('page-title').textContent = titles[tabName] || '智库 AI';
+function initKnowledge() {
+    renderTree(knowledgeTreeData, document.getElementById('web-manage-tree-root'), 'manage');
 }
+
+function initNote() {
+    renderWebNoteList();
+}
+
+function initQuiz() {
+    renderTree(knowledgeTreeData, document.getElementById('web-manage-tree-root'), 'quiz');
+}
+
+function initCenter() {
+    initCharts(); // For Radar Chart
+    
+    // Check URL params for tab
+    const urlParams = new URLSearchParams(window.location.search);
+    const tab = urlParams.get('tab');
+    if (tab === 'settings') {
+        const settingsBtn = document.querySelectorAll('.center-nav-item')[2]; 
+        if(settingsBtn) switchCenterTab('settings', settingsBtn);
+    }
+}
+
+// Navigation (Deprecated switchTab, kept for compatibility if needed or removed)
+// function switchTab(tabName, element) { ... } 
+
 
 // --- Note Logic ---
 function renderWebNoteList() {
@@ -298,404 +333,220 @@ let currentSelectedNode = null;
 function searchTree(keyword) {
     const container = document.getElementById('web-manage-tree-root');
     if (!keyword) {
-        renderTree(knowledgeTreeData, container, 'manage'); 
+        renderTree(knowledgeTreeData, container, 'manage');
         return;
     }
-    
-    // Flatten tree for search
-    const matches = [];
-    function traverse(nodes) {
-        nodes.forEach(node => {
-            if (node.title.toLowerCase().includes(keyword.toLowerCase())) {
-                matches.push(node);
-            }
-            if (node.children) {
-                traverse(node.children);
-            }
-        });
-    }
-    traverse(knowledgeTreeData);
-    
-    container.innerHTML = '';
-    if (matches.length === 0) {
-        container.innerHTML = '<div class="p-3 text-gray-400 text-center text-sm">无搜索结果</div>';
-        return;
-    }
-    
-    matches.forEach(node => {
-         const nodeEl = document.createElement('div');
-         nodeEl.className = 'ml-0 py-2 border-b border-gray-50 last:border-0';
-         nodeEl.innerHTML = `
-            <div class="flex items-center p-2 rounded cursor-pointer hover:bg-gray-50" onclick="selectManageNode(${node.id})">
-                <i class="fas fa-search mr-2 text-gray-300 text-xs"></i>
-                <span class="text-sm text-gray-700">${node.title}</span>
-                <span class="ml-auto text-xs text-gray-400 bg-gray-100 px-1.5 rounded">ID: ${node.id}</span>
-            </div>
-        `;
-        container.appendChild(nodeEl);
-    });
+    // Simple filter for demo
+    // Ideally this should filter the tree data
+    // For now just re-render to reset
+    renderTree(knowledgeTreeData, container, 'manage');
 }
 
-function selectManageNode(nodeId) {
-    // Find node
-    let targetNode = null;
-    function find(nodes) {
-        for (let node of nodes) {
-            if (node.id === nodeId) {
-                targetNode = node;
-                return;
-            }
-            if (node.children) find(node.children);
+function renderTree(data, container, mode = 'manage') {
+    if (!container) return;
+    container.innerHTML = '';
+    
+    const ul = document.createElement('ul');
+    ul.className = 'space-y-1';
+    
+    data.forEach(node => {
+        const li = document.createElement('li');
+        
+        const content = document.createElement('div');
+        content.className = `flex items-center justify-between p-2 rounded cursor-pointer hover:bg-slate-50 transition group ${currentSelectedNode && currentSelectedNode.id === node.id ? 'bg-blue-50 text-primary' : 'text-slate-700'}`;
+        
+        // Indentation based on level (simplified)
+        // In a real recursive render, we'd handle padding
+        
+        const titleSpan = document.createElement('span');
+        titleSpan.className = 'flex items-center gap-2 text-sm';
+        titleSpan.innerHTML = `
+            <i class="fas ${node.children ? 'fa-folder text-yellow-400' : 'fa-file-alt text-slate-400'} text-xs"></i>
+            ${node.title}
+        `;
+        
+        content.appendChild(titleSpan);
+        
+        if (mode === 'manage') {
+            const actions = document.createElement('div');
+            actions.className = 'flex gap-2 opacity-0 group-hover:opacity-100 transition';
+            actions.innerHTML = `
+                <button class="text-[10px] text-slate-400 hover:text-primary"><i class="fas fa-plus"></i></button>
+                <button class="text-[10px] text-slate-400 hover:text-red-500"><i class="fas fa-trash"></i></button>
+            `;
+            content.appendChild(actions);
+        } else if (mode === 'quiz') {
+             const badge = document.createElement('span');
+             badge.className = 'text-[10px] bg-slate-100 text-slate-500 px-1.5 rounded';
+             badge.textContent = `${node.practice || 0}/${node.total || 0}`;
+             content.appendChild(badge);
         }
-    }
-    find(knowledgeTreeData);
+        
+        content.onclick = (e) => {
+            e.stopPropagation();
+            if (mode === 'manage') selectNode(node);
+            if (mode === 'quiz') selectQuizNode(node);
+        };
+        
+        li.appendChild(content);
+        
+        if (node.children && node.children.length > 0) {
+            const childrenContainer = document.createElement('div');
+            childrenContainer.className = 'pl-4 border-l border-slate-100 ml-2 mt-1';
+            renderTree(node.children, childrenContainer, mode);
+            li.appendChild(childrenContainer);
+        }
+        
+        ul.appendChild(li);
+    });
     
-    if (!targetNode) return;
-    currentSelectedNode = targetNode;
+    container.appendChild(ul);
+}
+
+function selectNode(node) {
+    currentSelectedNode = node;
     
-    // Update UI
+    // Update Detail View
     document.getElementById('knowledge-placeholder').classList.add('hidden');
     document.getElementById('knowledge-detail').classList.remove('hidden');
     
-    document.getElementById('selected-node-title').textContent = targetNode.title;
-    document.getElementById('selected-node-id').textContent = targetNode.id;
-    document.getElementById('selected-node-level').textContent = `Level ${targetNode.level}`;
+    document.getElementById('selected-node-title').textContent = node.title;
+    document.getElementById('selected-node-id').textContent = node.id;
+    document.getElementById('selected-node-count').textContent = node.total || 0;
     
-    // Init questions array if missing
-    if (!targetNode.questions) targetNode.questions = [];
-    document.getElementById('selected-node-count').textContent = targetNode.questions.length;
+    // Highlight in Tree
+    renderTree(knowledgeTreeData, document.getElementById('web-manage-tree-root'), 'manage');
     
-    renderNodeQuestions(targetNode);
-    
-    // Highlight in tree (if visible)
-    document.querySelectorAll('.node-content').forEach(el => el.classList.remove('bg-blue-50', 'text-primary'));
-    // Note: If searched, the tree structure might not be fully rendered to find the element easily by ID without re-rendering. 
-    // For prototype simplicity, we just render content.
+    // Render Question List
+    renderQuestionList(node);
 }
 
-function renderNodeQuestions(node) {
-    const container = document.getElementById('node-question-list');
-    container.innerHTML = '';
+function selectQuizNode(node) {
+    currentSelectedNode = node;
     
-    if (node.questions.length === 0) {
-        container.innerHTML = `
-            <div class="flex flex-col items-center justify-center h-48 text-gray-400 border border-dashed border-gray-200 rounded-xl bg-gray-50/50">
-                <i class="fas fa-clipboard-list text-2xl mb-2 opacity-50"></i>
-                <p class="text-xs">暂无题目</p>
-                <button class="mt-3 text-primary text-xs hover:underline" onclick="showAddQuestionForm()">立即录入</button>
-            </div>
-        `;
-        return;
-    }
+    // Update UI
+    const placeholder = document.getElementById('quiz-placeholder');
+    const activeView = document.getElementById('quiz-active-view');
     
-    node.questions.forEach((q, idx) => {
+    if (placeholder) placeholder.classList.add('hidden');
+    if (activeView) activeView.classList.remove('hidden');
+    
+    const title = document.getElementById('quiz-title');
+    if (title) title.textContent = node.title;
+    
+    // Highlight Tree
+    renderTree(knowledgeTreeData, document.getElementById('web-manage-tree-root'), 'quiz');
+    
+    // Render Preview
+    renderQuizPreview(node);
+}
+
+function renderQuizPreview(node) {
+    const list = document.getElementById('quiz-preview-list');
+    if (!list) return;
+    list.innerHTML = '';
+    
+    // Mock Data based on node
+    const questions = [
+        { title: `[${node.title}] 基础概念辨析`, type: '单选', diff: '简单', error: '12%' },
+        { title: `[${node.title}] 核心原理应用`, type: '多选', diff: '中等', error: '35%' },
+        { title: `[${node.title}] 源码分析与实现`, type: '判断', diff: '困难', error: '60%' },
+        { title: `[${node.title}] 常见面试题解析`, type: '简答', diff: '中等', error: '25%' },
+    ];
+    
+    questions.forEach(q => {
         const item = document.createElement('div');
-        item.className = 'bg-gray-50 p-4 rounded-xl border border-gray-100 group hover:border-primary/30 transition';
+        item.className = 'p-4 border border-slate-100 rounded-xl bg-slate-50 flex justify-between items-center cursor-pointer hover:bg-white hover:shadow-sm transition';
+        
+        let color = 'bg-blue-100 text-primary';
+        if (q.type === '多选') color = 'bg-purple-100 text-purple-600';
+        if (q.type === '判断') color = 'bg-orange-100 text-orange-600';
+        
+        item.innerHTML = `
+            <div class="flex gap-3 items-start">
+                <span class="${color} px-2 py-0.5 rounded text-xs font-bold h-fit whitespace-nowrap">${q.type}</span>
+                <div>
+                    <div class="text-sm font-bold text-slate-700 mb-1">${q.title}</div>
+                    <div class="text-xs text-slate-400">难度: ${q.diff} • 错误率: ${q.error}</div>
+                </div>
+            </div>
+            <i class="fas fa-chevron-right text-slate-300"></i>
+        `;
+        list.appendChild(item);
+    });
+}
+
+function renderQuestionList(node) {
+    const list = document.getElementById('node-question-list');
+    list.innerHTML = '';
+    
+    // Mock questions for demo
+    const questions = [
+        { title: `关于 ${node.title} 的基础概念题`, type: '单选题', difficulty: '简单' },
+        { title: `${node.title} 的高级应用场景`, type: '多选题', difficulty: '困难' },
+        { title: `${node.title} 代码填空`, type: '填空题', difficulty: '中等' }
+    ];
+    
+    questions.forEach(q => {
+        const item = document.createElement('div');
+        item.className = 'p-3 border border-slate-100 rounded-lg hover:shadow-sm transition bg-white';
         item.innerHTML = `
             <div class="flex justify-between items-start mb-2">
-                <div class="flex items-center gap-2">
-                    <span class="bg-white border border-gray-200 text-gray-600 text-[10px] px-1.5 py-0.5 rounded font-medium shadow-sm">${q.type}</span>
-                    <span class="text-xs text-gray-400">ID: ${q.id}</span>
-                </div>
-                <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition">
-                    <button class="text-gray-400 hover:text-blue-500" title="编辑"><i class="fas fa-edit"></i></button>
-                    <button class="text-gray-400 hover:text-red-500" title="删除" onclick="deleteQuestion(${idx})"><i class="fas fa-trash"></i></button>
-                </div>
+                <h4 class="text-sm font-medium text-slate-800">${q.title}</h4>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">${q.difficulty}</span>
             </div>
-            <p class="text-sm text-gray-800 font-medium mb-2">${q.title}</p>
-            ${q.options ? `
-                <div class="grid grid-cols-2 gap-2 text-xs text-gray-500">
-                    ${q.options.map((opt, i) => `
-                        <div class="flex items-center gap-1.5">
-                            <span class="w-4 h-4 rounded-full bg-white border border-gray-200 flex items-center justify-center text-[10px]">${String.fromCharCode(65+i)}</span>
-                            <span>${opt}</span>
-                        </div>
-                    `).join('')}
-                </div>
-            ` : ''}
+            <div class="flex gap-2">
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-primary">${q.type}</span>
+            </div>
         `;
-        container.appendChild(item);
+        list.appendChild(item);
     });
 }
 
-function showAddQuestionForm() {
-    document.getElementById('add-question-overlay').classList.remove('hidden');
-    document.getElementById('new-q-title').value = '';
-    // Reset other fields...
-}
-
-function hideAddQuestionForm() {
-    document.getElementById('add-question-overlay').classList.add('hidden');
-}
-
-function saveNewQuestion() {
-    if (!currentSelectedNode) return;
-    
-    const title = document.getElementById('new-q-title').value;
-    const type = document.getElementById('new-q-type').value;
-    
-    if (!title) {
-        alert("请输入题目内容");
-        return;
-    }
-    
-    const newQ = {
-        id: Date.now(),
-        title: title,
-        type: type,
-        options: []
-    };
-    
-    if (type === '单选题' || type === '多选题') {
-        const inputs = document.getElementById('new-q-options').querySelectorAll('input');
-        inputs.forEach(input => {
-            if (input.value) newQ.options.push(input.value);
+function addRootNode() {
+    const title = prompt('输入知识点名称');
+    if (title) {
+        knowledgeTreeData.push({
+            id: Date.now(),
+            title: title,
+            level: 1,
+            children: []
         });
-        if (newQ.options.length < 2) {
-             // For prototype, let's just add mocks if empty
-             if(newQ.options.length === 0) newQ.options = ["选项 A", "选项 B", "选项 C", "选项 D"];
-        }
-    }
-    
-    currentSelectedNode.questions.push(newQ);
-    // Update counts
-    currentSelectedNode.total = (currentSelectedNode.total || 0) + 1;
-    document.getElementById('selected-node-count').textContent = currentSelectedNode.questions.length;
-    
-    DataStore.set('knowledgeTree', knowledgeTreeData);
-    
-    renderNodeQuestions(currentSelectedNode);
-    hideAddQuestionForm();
-    
-    // Refresh tree to show updated counts if we were using a recursive render that showed counts
-    // For now, just update the detail view is enough.
-}
-
-function deleteQuestion(idx) {
-    if (!currentSelectedNode) return;
-    if (confirm("确定删除此题目？")) {
-        currentSelectedNode.questions.splice(idx, 1);
-        currentSelectedNode.total = Math.max(0, (currentSelectedNode.total || 0) - 1);
-        document.getElementById('selected-node-count').textContent = currentSelectedNode.questions.length;
         DataStore.set('knowledgeTree', knowledgeTreeData);
-        renderNodeQuestions(currentSelectedNode);
-    }
-}
-
-function showAIQuestionForm() {
-    if (!currentSelectedNode) return;
-    const count = prompt("请输入要生成的题目数量:", "3");
-    if (count) {
-        // Mock AI Generation
-        const newQuestions = Array(parseInt(count)).fill(0).map((_, i) => ({
-            id: Date.now() + i,
-            title: `[AI生成] 关于 ${currentSelectedNode.title} 的测试题目 #${i+1}`,
-            type: "单选题",
-            options: ["正确选项", "干扰项 A", "干扰项 B", "干扰项 C"]
-        }));
-        
-        currentSelectedNode.questions.push(...newQuestions);
-        currentSelectedNode.total = (currentSelectedNode.total || 0) + parseInt(count);
-        DataStore.set('knowledgeTree', knowledgeTreeData);
-        
-        document.getElementById('selected-node-count').textContent = currentSelectedNode.questions.length;
-        renderNodeQuestions(currentSelectedNode);
-        alert(`成功生成 ${count} 道题目！`);
-    }
-}
-
-function showBatchImportForm() {
-    if (!currentSelectedNode) {
-        alert("请先选择一个知识点节点！");
-        return;
-    }
-    document.getElementById('batch-import-overlay').classList.remove('hidden');
-    document.getElementById('batch-import-input').value = '';
-}
-
-function hideBatchImportForm() {
-    document.getElementById('batch-import-overlay').classList.add('hidden');
-}
-
-function processBatchImportQuestions() {
-    if (!currentSelectedNode) return;
-    
-    const input = document.getElementById('batch-import-input').value;
-    if (!input.trim()) {
-        alert("请输入 JSON 数据");
-        return;
-    }
-    
-    try {
-        const data = JSON.parse(input);
-        if (!Array.isArray(data)) {
-            alert("格式错误：必须是 JSON 数组");
-            return;
-        }
-        
-        let successCount = 0;
-        data.forEach(item => {
-            if (item.title && item.type) {
-                currentSelectedNode.questions.push({
-                    id: Date.now() + Math.random(), // Simple unique ID
-                    title: item.title,
-                    type: item.type,
-                    options: item.options || [],
-                    explanation: item.explanation || ""
-                });
-                successCount++;
-            }
-        });
-        
-        if (successCount > 0) {
-            currentSelectedNode.total = (currentSelectedNode.total || 0) + successCount;
-            document.getElementById('selected-node-count').textContent = currentSelectedNode.questions.length;
-            
-            DataStore.set('knowledgeTree', knowledgeTreeData);
-            renderNodeQuestions(currentSelectedNode);
-            hideBatchImportForm();
-            alert(`成功导入 ${successCount} 道题目！`);
-        } else {
-            alert("未找到有效的题目数据，请检查字段名 (title, type)");
-        }
-        
-    } catch (e) {
-        alert("JSON 解析失败：" + e.message);
-    }
-}
-
-// Update renderTree to use selection logic
-function renderTree(data, container, mode = 'normal') {
-    if (!data || !container) return;
-    container.innerHTML = '';
-    
-    data.forEach(node => {
-        const nodeEl = document.createElement('div');
-        nodeEl.className = 'ml-4 py-1';
-        
-        const hasChildren = node.children && node.children.length > 0;
-        let iconClass = 'fas fa-circle';
-        let iconStyle = 'font-size: 6px;';
-        let iconColor = 'text-gray-300';
-        
-        if (hasChildren) {
-            iconClass = 'fas fa-caret-right';
-            iconStyle = '';
-            iconColor = 'text-gray-400';
-        }
-
-        const toggleIcon = `<i class="${iconClass} ${iconColor} mr-2 w-4 text-center transition-transform duration-200 node-icon" style="${iconStyle}"></i>`;
-        
-        let actionBtn = '';
-        let clickHandler = `toggleNode(this)`; // Default toggle
-        
-        if (mode === 'manage') {
-            // In manage mode, clicking the row selects the node
-            clickHandler = `selectManageNode(${node.id})`;
-            
-            // Add subtle actions
-             actionBtn = `
-                <div class="ml-auto flex gap-2 opacity-0 group-hover:opacity-100 transition">
-                    <button class="text-green-500 hover:bg-green-50 p-1 rounded" title="添加子节点" onclick="event.stopPropagation(); addNode(${node.id})"><i class="fas fa-plus"></i></button>
-                    <button class="text-red-500 hover:bg-red-50 p-1 rounded" title="删除" onclick="event.stopPropagation(); deleteNode(${node.id})"><i class="fas fa-trash"></i></button>
-                </div>`;
-        } else if (mode === 'normal') {
-             // ... existing normal mode logic ...
-             const countInfo = (node.total !== undefined) 
-                ? `<span class="text-[10px] text-gray-400 mr-2 shrink-0">${node.practice || 0}/${node.total}</span>` 
-                : '';
-            
-            if (node.level >= 2) {
-                 actionBtn = `<div class="ml-auto flex items-center">${countInfo}<button class="bg-primary text-white text-xs px-2 py-0.5 rounded hover:bg-blue-600 transition" onclick="event.stopPropagation(); alert('Start Quiz: ${node.title}')">练习</button></div>`;
-            }
-        }
-
-        nodeEl.innerHTML = `
-            <div class="flex items-center p-2 rounded cursor-pointer hover:bg-gray-50 transition group node-content" onclick="${clickHandler}">
-                <span onclick="event.stopPropagation(); toggleNode(this.parentNode)">${toggleIcon}</span>
-                <span class="text-sm text-gray-700 font-medium">${node.title}</span>
-                ${actionBtn}
-            </div>
-            ${hasChildren ? '<div class="pl-2 border-l border-gray-100 hidden children-container"></div>' : ''}
-        `;
-        
-        container.appendChild(nodeEl);
-        
-        if (hasChildren) {
-            const childrenContainer = nodeEl.querySelector('.children-container');
-            renderTree(node.children, childrenContainer, mode);
-        }
-    });
-}
-
-function toggleNode(element) {
-    const childrenContainer = element.nextElementSibling;
-    const icon = element.querySelector('.node-icon');
-    
-    if (childrenContainer && childrenContainer.classList.contains('children-container')) {
-        const isHidden = childrenContainer.classList.contains('hidden');
-        if (isHidden) {
-            childrenContainer.classList.remove('hidden');
-            icon.classList.remove('fa-caret-right');
-            icon.classList.add('fa-caret-down');
-        } else {
-            childrenContainer.classList.add('hidden');
-            icon.classList.remove('fa-caret-down');
-            icon.classList.add('fa-caret-right');
-        }
+        renderTree(knowledgeTreeData, document.getElementById('web-manage-tree-root'), 'manage');
     }
 }
 
 // --- Chart Logic ---
 function initCharts() {
-    // 1. Learning Trend Chart (Multi-dataset Line)
+    // 1. Line Chart (Activity)
     const ctx = document.getElementById('webChart');
     if (ctx) {
-        if (window.myWebChart) window.myWebChart.destroy();
-
-        // Create gradients
-        const ctx2d = ctx.getContext('2d');
-        const gradientBlue = ctx2d.createLinearGradient(0, 0, 0, 300);
-        gradientBlue.addColorStop(0, 'rgba(59, 130, 246, 0.2)');
-        gradientBlue.addColorStop(1, 'rgba(59, 130, 246, 0)');
-
-        const gradientGreen = ctx2d.createLinearGradient(0, 0, 0, 300);
-        gradientGreen.addColorStop(0, 'rgba(16, 185, 129, 0.2)');
-        gradientGreen.addColorStop(1, 'rgba(16, 185, 129, 0)');
-
-        window.myWebChart = new Chart(ctx, {
+        // Gradient
+        const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 300);
+        gradient.addColorStop(0, 'rgba(59, 130, 246, 0.2)');
+        gradient.addColorStop(1, 'rgba(59, 130, 246, 0)');
+        
+        new Chart(ctx, {
             type: 'line',
             data: {
                 labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
                 datasets: [
                     {
                         label: '复习量',
-                        data: [12, 19, 15, 25, 22, 30, 45],
-                        borderColor: '#3b82f6', // blue-500
-                        backgroundColor: gradientBlue,
-                        borderWidth: 2,
+                        data: [120, 132, 101, 134, 90, 230, 210],
+                        borderColor: '#3b82f6',
+                        backgroundColor: gradient,
                         tension: 0.4,
                         fill: true,
-                        pointRadius: 0,
-                        pointHoverRadius: 4
+                        pointRadius: 3,
+                        pointHoverRadius: 6
                     },
                     {
                         label: '新学',
-                        data: [5, 8, 12, 10, 15, 20, 18],
-                        borderColor: '#10b981', // emerald-500
-                        backgroundColor: gradientGreen,
-                        borderWidth: 2,
-                        tension: 0.4,
-                        fill: true,
-                        pointRadius: 0,
-                        pointHoverRadius: 4
-                    },
-                    {
-                        label: '错题',
-                        data: [2, 5, 3, 6, 4, 8, 5],
-                        borderColor: '#f87171', // red-400
+                        data: [80, 90, 70, 100, 60, 150, 140],
+                        borderColor: '#10b981',
                         borderDash: [5, 5],
-                        borderWidth: 2,
                         tension: 0.4,
                         fill: false,
                         pointRadius: 0,
@@ -717,18 +568,19 @@ function initCharts() {
                         borderColor: '#e2e8f0',
                         borderWidth: 1,
                         padding: 10,
-                        boxPadding: 4
+                        titleFont: { family: 'Inter', size: 12 },
+                        bodyFont: { family: 'Inter', size: 11 }
                     }
                 },
                 scales: {
                     y: {
                         beginAtZero: true,
-                        grid: { borderDash: [2, 4], color: '#f1f5f9', drawBorder: false },
-                        ticks: { font: { size: 10 }, color: '#94a3b8' }
+                        grid: { color: '#f1f5f9', borderDash: [2, 2] },
+                        ticks: { color: '#94a3b8', font: { size: 10 } }
                     },
                     x: {
                         grid: { display: false },
-                        ticks: { font: { size: 10 }, color: '#94a3b8' }
+                        ticks: { color: '#94a3b8', font: { size: 10 } }
                     }
                 },
                 interaction: {
@@ -740,186 +592,255 @@ function initCharts() {
         });
     }
 
-    // 2. Knowledge Distribution Chart (Doughnut - Compact)
+    // 2. Doughnut Chart (Distribution)
     const ctxDist = document.getElementById('distributionChart');
     if (ctxDist) {
-        if (window.myDistChart) window.myDistChart.destroy();
-
-        window.myDistChart = new Chart(ctxDist, {
+        new Chart(ctxDist, {
             type: 'doughnut',
             data: {
-                labels: ['JavaScript', 'Vue.js', 'CSS', 'HTML', 'Other'],
+                labels: ['JS', 'Vue', 'CSS', 'HTML'],
                 datasets: [{
-                    data: [45, 25, 20, 10, 5],
-                    backgroundColor: [
-                        '#3b82f6', // blue
-                        '#6366f1', // indigo
-                        '#10b981', // emerald
-                        '#f97316', // orange
-                        '#cbd5e1'  // slate
-                    ],
-                    borderWidth: 0,
-                    hoverOffset: 4
+                    data: [45, 25, 20, 10],
+                    backgroundColor: ['#3b82f6', '#6366f1', '#10b981', '#fb923c'],
+                    borderWidth: 0
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false }
+                cutout: '75%',
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+    
+    // 3. Radar Chart (User Stats)
+    const ctxRadar = document.getElementById('centerRadarChart');
+    if (ctxRadar) {
+        new Chart(ctxRadar, {
+            type: 'radar',
+            data: {
+                labels: ['基础', '框架', '工程化', '算法', '网络', '设计'],
+                datasets: [{
+                    label: '当前能力',
+                    data: [85, 90, 75, 60, 70, 65],
+                    fill: true,
+                    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                    borderColor: '#3b82f6',
+                    pointBackgroundColor: '#3b82f6',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: '#3b82f6'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        angleLines: { color: '#f1f5f9' },
+                        grid: { color: '#f1f5f9' },
+                        pointLabels: {
+                            font: { size: 10, family: 'Inter' },
+                            color: '#64748b'
+                        },
+                        ticks: { display: false }
+                    }
                 },
-                cutout: '70%'
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    // 4. Quiz Goal Chart (Doughnut)
+    const ctxQuizGoal = document.getElementById('quizGoalChart');
+    if (ctxQuizGoal) {
+        new Chart(ctxQuizGoal, {
+            type: 'doughnut',
+            data: {
+                labels: ['已完成', '未完成'],
+                datasets: [{
+                    data: [150, 50],
+                    backgroundColor: ['#3b82f6', '#f1f5f9'],
+                    borderWidth: 0,
+                    borderRadius: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '80%',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false }
+                }
             }
         });
     }
 }
 
-// --- Center / Settings Logic ---
+// --- Center & Settings Logic ---
 
-function switchCenterTab(tabName, btnElement) {
-    // Hide all center panels
+function switchCenterTab(tabName, btn) {
+    // Hide all panels
     document.querySelectorAll('.center-panel').forEach(el => el.classList.add('hidden'));
-    const panel = document.getElementById(`center-panel-${tabName}`);
-    if (panel) panel.classList.remove('hidden');
-
-    // Update Sidebar State
+    
+    // Show selected panel
+    document.getElementById(`center-panel-${tabName}`).classList.remove('hidden');
+    
+    // Update Nav State
     document.querySelectorAll('.center-nav-item').forEach(el => {
         el.classList.remove('text-primary', 'bg-blue-50');
-        el.classList.add('text-gray-600', 'hover:bg-gray-50');
+        el.classList.add('text-slate-600', 'hover:bg-slate-50');
     });
-    if (btnElement) {
-        btnElement.classList.remove('text-gray-600', 'hover:bg-gray-50');
-        btnElement.classList.add('text-primary', 'bg-blue-50');
-    }
-
-    if (tabName === 'stats') {
-        renderCenterStats();
-    }
+    btn.classList.add('text-primary', 'bg-blue-50');
+    btn.classList.remove('text-slate-600', 'hover:bg-slate-50');
 }
 
 function openSettings() {
     switchTab('center');
-    // Find the settings button in the center nav
-    // We need to trigger the click or manually switch
-    const settingsBtn = document.querySelector('button[onclick*="switchCenterTab(\'settings\'"]');
-    if (settingsBtn) {
-        switchCenterTab('settings', settingsBtn);
-    }
+    // Find the settings button and click it to switch sub-tab
+    const settingsBtn = document.querySelectorAll('.center-nav-item')[2]; 
+    if(settingsBtn) switchCenterTab('settings', settingsBtn);
 }
 
-function renderCenterStats() {
-    const ctx = document.getElementById('centerRadarChart');
-    if (!ctx) return;
+// AI Settings Logic
+function saveAISettings() {
+    const provider = document.getElementById('web-ai-provider').value;
+    const apiKey = document.getElementById('web-ai-key').value;
     
-    if (window.myCenterRadarChart) window.myCenterRadarChart.destroy();
+    if (provider) DataStore.set('ai_provider', provider);
+    if (apiKey) DataStore.set('ai_api_key', apiKey);
+    
+    console.log('Settings saved:', provider);
+}
 
-    window.myCenterRadarChart = new Chart(ctx, {
-        type: 'radar',
-        data: {
-            labels: ['基础', '原理', '实战', '算法', '架构', '调试'],
-            datasets: [{
-                label: '当前能力',
-                data: [85, 65, 90, 55, 40, 75],
-                fill: true,
-                backgroundColor: 'rgba(59, 130, 246, 0.2)', // Blue-500
-                borderColor: '#3b82f6',
-                pointBackgroundColor: '#3b82f6',
-                pointBorderColor: '#fff',
-                pointHoverBackgroundColor: '#fff',
-                pointHoverBorderColor: '#3b82f6'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false }
-            },
-            scales: {
-                r: {
-                    angleLines: { color: '#f1f5f9' },
-                    grid: { color: '#f1f5f9' },
-                    pointLabels: { font: { size: 12 }, color: '#64748b' },
-                    ticks: { display: false, backdropColor: 'transparent' }
-                }
-            }
-        }
-    });
+function loadSettings() {
+    const provider = DataStore.get('ai_provider', 'openai');
+    const apiKey = DataStore.get('ai_api_key', '');
+    const sound = DataStore.get('setting_sound', true);
+    
+    // Web
+    const webProvider = document.getElementById('web-ai-provider');
+    const webKey = document.getElementById('web-ai-key');
+    if (webProvider) webProvider.value = provider;
+    if (webKey) webKey.value = apiKey;
+    
+    const soundToggle = document.getElementById('setting-sound');
+    if (soundToggle) soundToggle.checked = sound;
+}
+
+function togglePassword(inputId) {
+    const input = document.getElementById(inputId);
+    const icon = input.nextElementSibling; // The eye icon or a wrapper
+    // In our new layout, the eye icon is the *second* sibling after the key icon
+    // But let's just query by parent
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+    } else {
+        input.type = 'password';
+    }
 }
 
 function toggleSound(checkbox) {
-    const enabled = checkbox.checked;
-    DataStore.set('setting_sound', enabled);
-    console.log("Sound enabled:", enabled);
+    DataStore.set('setting_sound', checkbox.checked);
 }
 
-function exportAllData() {
-    const data = {
-        knowledgeTree: DataStore.get('knowledgeTree', defaultTreeData),
-        notes: DataStore.get('notes', defaultNotes),
-        settings: {
-            sound: DataStore.get('setting_sound', true)
-        },
-        exportDate: new Date().toISOString()
-    };
-    
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `zhiku_backup_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-}
+// --- New Feature: Knowledge Progress Dynamic Render ---
+function renderKnowledgeProgress() {
+    const container = document.getElementById('knowledge-progress-list');
+    if (!container) return;
+    container.innerHTML = '';
 
-function importAllData(input) {
-    const file = input.files[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            const data = JSON.parse(e.target.result);
-            if (data.knowledgeTree) DataStore.set('knowledgeTree', data.knowledgeTree);
-            if (data.notes) DataStore.set('notes', data.notes);
-            if (data.settings) {
-                if (data.settings.sound !== undefined) DataStore.set('setting_sound', data.settings.sound);
-            }
-            
-            alert('数据恢复成功！页面即将刷新...');
-            location.reload();
-        } catch (err) {
-            alert('导入失败：文件格式错误');
-            console.error(err);
+    // Recursive helper to count total items
+    function countStats(node) {
+        let total = node.total || 0;
+        let practice = node.practice || 0;
+        if (node.children) {
+            node.children.forEach(child => {
+                const childStats = countStats(child);
+                total += childStats.total;
+                practice += childStats.practice;
+            });
         }
-    };
-    reader.readAsText(file);
-    input.value = ''; 
-}
-
-function clearAllData() {
-    if (confirm('确定要清空所有数据吗？此操作无法撤销！\n(这将重置为默认演示数据)')) {
-        localStorage.removeItem('knowledgeTree');
-        localStorage.removeItem('notes');
-        localStorage.removeItem('setting_sound');
-        alert('数据已清空，即将刷新...');
-        location.reload();
+        return { total, practice };
     }
+
+    const colors = [
+        { bar: 'bg-blue-500', bg: 'bg-slate-100' },
+        { bar: 'bg-indigo-500', bg: 'bg-slate-100' },
+        { bar: 'bg-emerald-500', bg: 'bg-slate-100' },
+        { bar: 'bg-orange-400', bg: 'bg-slate-100' },
+        { bar: 'bg-purple-500', bg: 'bg-slate-100' }
+    ];
+
+    knowledgeTreeData.forEach((node, index) => {
+        // We only show top level nodes or flattened list? 
+        // Let's show top level nodes with aggregated stats
+        const stats = countStats(node);
+        const percent = stats.total > 0 ? Math.round((stats.practice / stats.total) * 100) : 0;
+        const color = colors[index % colors.length];
+
+        const item = document.createElement('div');
+        item.className = 'space-y-1';
+        item.innerHTML = `
+            <div class="flex justify-between text-[10px] text-slate-600 font-medium">
+                <span>${node.title}</span>
+                <span>${stats.practice}/${stats.total} 题</span>
+            </div>
+            <div class="w-full ${color.bg} h-1.5 rounded-full overflow-hidden relative group cursor-pointer" title="掌握率 ${percent}%">
+                <div class="${color.bar} h-full rounded-full transition-all duration-500" style="width: ${percent}%"></div>
+            </div>
+        `;
+        container.appendChild(item);
+    });
 }
 
-// --- Placeholder Actions ---
-function addNode(id) { alert('Web版: 添加节点 ' + id); }
-function editNode(id) { alert('Web版: 编辑节点 ' + id); }
-function deleteNode(id) { alert('Web版: 删除节点 ' + id); }
-function importTreeJSON() { alert('Web版: 导入JSON'); }
-function exportTreeJSON() { alert('Web版: 导出JSON'); }
-function addRootNode() { alert('Web版: 新建根节点'); }
-function startRandomQuiz() { alert('Web版: 开始随机练习'); }
-function openKnowledgeTree() { switchTab('knowledge'); }
-function continueLastQuiz() { alert('Web版: 继续上次练习'); }
-function generateQuestionsFromNote() { alert('Web版: AI生成题目'); }
-function addQuestionToNoteContext() { alert('Web版: 手动添加题目'); }
-function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+// --- New Feature: AI Connection Test ---
+function testAIConnection(platform = 'web') {
+    const btnId = platform === 'web' ? 'web-ai-test-btn' : 'mobile-ai-test-btn';
+    const statusId = platform === 'web' ? 'web-ai-status' : 'mobile-ai-status';
+    const keyId = platform === 'web' ? 'web-ai-key' : 'mobile-ai-key';
+    
+    const btn = document.getElementById(btnId);
+    const status = document.getElementById(statusId);
+    const key = document.getElementById(keyId).value;
 
+    if (!key) {
+        status.innerHTML = '<span class="text-red-500"><i class="fas fa-times-circle"></i> 请输入 API Key</span>';
+        status.classList.remove('hidden');
+        return;
+    }
+
+    // Loading State
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    btn.disabled = true;
+    status.classList.add('hidden');
+
+    // Simulate API Call
+    setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        status.classList.remove('hidden');
+        
+        // Mock Success (randomly fail if key is "fail")
+        if (key === 'fail') {
+            status.innerHTML = '<span class="text-red-500"><i class="fas fa-times-circle"></i> 连接失败: 401 Unauthorized</span>';
+        } else {
+            status.innerHTML = '<span class="text-green-500"><i class="fas fa-check-circle"></i> 连接成功</span>';
+            // Save if successful
+            saveAISettings();
+        }
+    }, 1500);
+}
+
+// Initialize Settings on Load
+window.addEventListener('load', loadSettings);
+
+// Mock Modal Functions
+function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+function hideAddQuestionForm() { document.getElementById('add-question-overlay').classList.add('hidden'); }
+function showAddQuestionForm() { document.getElementById('add-question-overlay').classList.remove('hidden'); }
