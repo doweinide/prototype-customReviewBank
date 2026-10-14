@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>智库 - AI 知识外脑</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -11,7 +11,7 @@
             theme: {
                 extend: {
                     colors: {
-                        primary: '#1890ff',
+                        primary: '#5364dc',
                     }
                 }
             }
@@ -21,132 +21,18 @@
         ::-webkit-scrollbar { width: 0px; background: transparent; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
+<link rel="stylesheet" href="refresh.css">
 </head>
 <body class="bg-gray-50 flex justify-center min-h-screen text-gray-800 font-sans">
-    <div class="w-full max-w-md bg-white flex flex-col h-screen relative shadow-2xl overflow-hidden">
-        <!-- Minimal Header -->
-        <header class="px-5 pt-6 pb-2 bg-white flex justify-between items-center shrink-0">
-            <div>
-                <h1 class="text-xl font-bold text-gray-900 tracking-tight">智库 AI</h1>
-                <p class="text-xs text-gray-400">构建你的第二大脑</p>
-            </div>
-            <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
-                <i class="fas fa-bell text-sm"></i>
-            </div>
+    <div class="rev-shell w-full bg-white flex flex-col h-screen relative shadow-2xl overflow-hidden">
+        <header class="flex justify-between items-center px-5">
+            <div class="flex items-center gap-3"><div class="rev-logo" style="width:38px;height:38px;border-radius:13px"><i class="fas fa-brain"></i></div>
+              <div><h1 class="text-lg font-extrabold" style="color:#17263d">智库 AI <span style="color:#5364dc">·</span> 学习空间</h1><p class="text-xs" style="color:#8190a4">Learn a little, every day.</p></div></div>
+            <button aria-label="个人中心" class="rev-logo" style="width:37px;height:37px;font-size:15px;border:none;cursor:pointer" onclick="navigateTo('center.html')"><i class="fas fa-user"></i></button>
         </header>
-
-        <!-- Main Content Area -->
-        <main class="flex-1 overflow-y-auto p-5 pb-20 bg-white no-scrollbar">
-            
-            <!-- Hero Section: AI Note Core -->
-            <div class="bg-gradient-to-br from-primary to-blue-600 rounded-2xl p-5 text-white shadow-lg mb-6 relative overflow-hidden group cursor-pointer transition transform active:scale-[0.98]" onclick="createNote()">
-                <!-- Decor -->
-                <div class="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition"></div>
-                
-                <div class="relative z-10">
-                    <div class="flex items-start justify-between mb-8">
-                        <div>
-                            <h2 class="text-xl font-bold mb-1">笔记生成题库</h2>
-                            <p class="text-blue-100 text-xs font-light">AI 自动分析，一键生成复习题</p>
-                        </div>
-                        <div class="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
-                            <i class="fas fa-magic text-xl"></i>
-                        </div>
-                    </div>
-                    
-                    <div class="flex gap-3">
-                        <button class="flex-1 bg-white text-primary py-2.5 px-4 rounded-xl text-sm font-bold shadow-sm flex items-center justify-center gap-2">
-                            <i class="fas fa-plus"></i> 新建笔记
-                        </button>
-                        <button class="px-4 py-2.5 bg-black/20 rounded-xl text-sm font-medium hover:bg-black/30 transition backdrop-blur-md" onclick="event.stopPropagation(); navigateTo('note.html')">
-                            我的笔记
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Stats Row -->
-            <div class="grid grid-cols-2 gap-4 mb-6">
-                <div class="bg-orange-50 rounded-xl p-4 flex items-center gap-3 border border-orange-100 cursor-pointer" onclick="startReview()">
-                    <div class="w-10 h-10 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center shrink-0">
-                        <i class="fas fa-history"></i>
-                    </div>
-                    <div>
-                        <div class="text-lg font-bold text-gray-800 leading-none">15</div>
-                        <div class="text-xs text-gray-500 mt-1">待复习</div>
-                    </div>
-                </div>
-                <div class="bg-purple-50 rounded-xl p-4 flex items-center gap-3 border border-purple-100">
-                    <div class="w-10 h-10 rounded-full bg-purple-100 text-purple-500 flex items-center justify-center shrink-0">
-                        <i class="fas fa-brain"></i>
-                    </div>
-                    <div>
-                        <div class="text-lg font-bold text-gray-800 leading-none">85%</div>
-                        <div class="text-xs text-gray-500 mt-1">掌握率</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Recent Practice Shortcut (New Module) -->
-            <div class="mb-6">
-                 <div class="bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl p-4 text-white shadow-lg relative overflow-hidden cursor-pointer group transition transform active:scale-[0.98]" onclick="continueLastQuiz()">
-                    <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-white/20 rounded-full blur-xl group-hover:scale-110 transition"></div>
-                    
-                    <div class="flex items-center justify-between relative z-10">
-                        <div>
-                            <div class="flex items-center gap-2 mb-1">
-                                <span class="bg-white/20 px-2 py-0.5 rounded text-[10px] font-medium backdrop-blur-sm">最近练习</span>
-                                <span class="text-xs text-emerald-100">上次练习到 15:30</span>
-                            </div>
-                            <h3 class="text-lg font-bold">Vue3 响应式原理</h3>
-                            <p class="text-emerald-100 text-xs mt-1">已完成 5/20 题 • 正确率 80%</p>
-                        </div>
-                        <div class="w-10 h-10 bg-white text-emerald-600 rounded-full flex items-center justify-center shadow-sm shrink-0">
-                            <i class="fas fa-play ml-1"></i>
-                        </div>
-                    </div>
-                 </div>
-            </div>
-
-            <!-- Knowledge System Section -->
-            <div class="mb-6">
-                <div class="flex justify-between items-center mb-3 px-1">
-                    <h3 class="text-base font-bold text-gray-800">知识体系</h3>
-                    <span class="text-xs text-gray-400 cursor-pointer" onclick="navigateTo('knowledge.html')">管理 ></span>
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="bg-gray-50 rounded-xl p-4 flex flex-col justify-between h-24 cursor-pointer hover:bg-gray-100 transition border border-gray-100" onclick="openKnowledgeTree()">
-                        <i class="fas fa-project-diagram text-2xl text-green-500"></i>
-                        <div>
-                            <div class="font-bold text-gray-800 text-sm">知识树</div>
-                            <div class="text-[10px] text-gray-400">结构化学习</div>
-                        </div>
-                    </div>
-                    <div class="bg-gray-50 rounded-xl p-4 flex flex-col justify-between h-24 cursor-pointer hover:bg-gray-100 transition border border-gray-100" onclick="startRandomQuiz()">
-                        <i class="fas fa-random text-2xl text-blue-500"></i>
-                        <div>
-                            <div class="font-bold text-gray-800 text-sm">随机练习</div>
-                            <div class="text-[10px] text-gray-400">碎片化巩固</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Quick Add -->
-            <div class="border-t border-gray-100 pt-6">
-                <div class="flex items-center justify-between p-4 rounded-xl bg-gray-50 border border-gray-100 cursor-pointer hover:bg-gray-100 transition" onclick="navigateTo('knowledge.html?action=addQ')">
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-gray-400">
-                            <i class="fas fa-pen"></i>
-                        </div>
-                        <span class="text-sm font-medium text-gray-600">手动录入题目</span>
-                    </div>
-                    <i class="fas fa-chevron-right text-xs text-gray-300"></i>
-                </div>
-            </div>
-
+        <main class="flex-1 overflow-y-auto no-scrollbar">
+            <div id="rev-dashboard" class="rev-home" aria-live="polite"></div>
         </main>
-
         <!-- Bottom Tab Bar -->
         <nav class="absolute bottom-0 w-full h-20 bg-white/90 backdrop-blur-md flex border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.03)] z-30 pb-2">
             <div class="flex-1 flex flex-col items-center justify-center text-primary cursor-pointer group" onclick="navigateTo('index.html')">
@@ -200,6 +86,7 @@
     </div>
 
     <script src="script.js"></script>
+    <script src="refresh.js"></script>
     <style>
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
