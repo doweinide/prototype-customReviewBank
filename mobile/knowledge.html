@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>知识库管理 - 自定义题库</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -11,7 +11,7 @@
             theme: {
                 extend: {
                     colors: {
-                        primary: '#1890ff',
+                        primary: '#5364dc',
                     }
                 }
             }
@@ -21,9 +21,10 @@
         ::-webkit-scrollbar { width: 0px; background: transparent; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
+<link rel="stylesheet" href="refresh.css">
 </head>
 <body class="bg-gray-100 flex justify-center min-h-screen text-gray-800 font-sans">
-    <div class="w-full max-w-md bg-white flex flex-col h-screen relative shadow-2xl overflow-hidden">
+    <div class="rev-shell w-full bg-white flex flex-col h-screen relative shadow-2xl overflow-hidden">
         
         <!-- Tree Manage Section -->
         <div id="tree-manage-section" class="flex flex-col h-full">
@@ -32,7 +33,7 @@
                 <h1 class="text-lg font-semibold text-gray-800">知识树管理</h1>
                 <span class="absolute right-4 text-lg text-gray-600 cursor-pointer p-1" onclick="exportTreeJSON()"><i class="fas fa-download"></i></span>
             </header>
-            <div class="flex-1 overflow-y-auto p-4 pb-20 bg-gray-50 no-scrollbar">
+            <div class="flex-1 overflow-y-auto p-4 pb-20 bg-gray-50 no-scrollbar"><div class="rev-page-intro"><div><h2>打造自己的知识地图</h2><p>按主题分类 · 分层管理 · 专项练习</p></div><span class="rev-icon mint"><i class="fas fa-layer-group"></i></span></div>
                 <div class="flex gap-2 mb-4">
                     <button class="flex-1 bg-white border border-primary text-primary py-1.5 px-3 rounded-lg text-xs flex items-center justify-center gap-1 active:bg-blue-50" onclick="importTreeJSON()"><i class="fas fa-file-import"></i> 导入 JSON</button>
                     <button class="flex-1 bg-white border border-primary text-primary py-1.5 px-3 rounded-lg text-xs flex items-center justify-center gap-1 active:bg-blue-50" onclick="addRootNode()"><i class="fas fa-plus"></i> 新增根节点</button>
@@ -151,6 +152,7 @@
 
     </div>
     <script src="script.js"></script>
+    <script src="refresh.js"></script>
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('action') === 'addQ') {
